@@ -149,10 +149,10 @@ update_cs_db <- function(
   # get available years in export database
   available_exp_years <- try(
     arrow::open_dataset(path_exp) |>
-      dplyr::select(co_ano) |>
+      dplyr::select(year) |>
       dplyr::distinct() |>
       dplyr::collect() |>
-      dplyr::pull(co_ano) |>
+      dplyr::pull(year) |>
       sort(),
     silent = TRUE
   )
@@ -160,10 +160,10 @@ update_cs_db <- function(
   # get available years in import database
   available_imp_years <- try(
     arrow::open_dataset(path_imp) |>
-      dplyr::select(co_ano) |>
+      dplyr::select(year) |>
       dplyr::distinct() |>
       dplyr::collect() |>
-      dplyr::pull(co_ano) |>
+      dplyr::pull(year) |>
       sort(),
     silent = TRUE)
 
@@ -221,24 +221,24 @@ update_cs_db <- function(
 
   # get most recent date for import database
   imp_last_update <- arrow::open_dataset(path_imp) |>
-    dplyr::select(co_ano, co_mes) |>
+    dplyr::select(year, month) |>
     dplyr::distinct() |>
     dplyr::collect() |>
-    dplyr::filter(max(co_ano) == co_ano) |>
-    dplyr::filter(max(co_mes) == co_mes) |>
-    dplyr::mutate(co_mes = stringr::str_pad(co_mes, width = 2, side = 'left', pad = '0')) |>
-    tidyr::unite(col = "atualizacao", co_ano, co_mes, sep = "-") |>
+    dplyr::filter(max(year) == year) |>
+    dplyr::filter(max(month) == month) |>
+    dplyr::mutate(month = stringr::str_pad(month, width = 2, side = 'left', pad = '0')) |>
+    tidyr::unite(col = "atualizacao", year, month, sep = "-") |>
     dplyr::pull(atualizacao)
 
   # get most recent date for export database
   exp_last_update <- arrow::open_dataset(path_exp) |>
-    dplyr::select(co_ano, co_mes) |>
+    dplyr::select(year, month) |>
     dplyr::distinct() |>
     dplyr::collect() |>
-    dplyr::filter(max(co_ano) == co_ano) |>
-    dplyr::filter(max(co_mes) == co_mes) |>
-    dplyr::mutate(co_mes = stringr::str_pad(co_mes, width = 2, side = 'left', pad = '0')) |>
-    tidyr::unite(col = "atualizacao", co_ano, co_mes, sep = "-") |>
+    dplyr::filter(max(year) == year) |>
+    dplyr::filter(max(month) == month) |>
+    dplyr::mutate(month = stringr::str_pad(month, width = 2, side = 'left', pad = '0')) |>
+    tidyr::unite(col = "atualizacao", year, month, sep = "-") |>
     dplyr::pull(atualizacao)
 
   # tests if databases are updated
@@ -296,3 +296,4 @@ update_cs_db <- function(
     )
   message("Update complete\n")
 }
+
