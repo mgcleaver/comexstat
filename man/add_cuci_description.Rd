@@ -10,6 +10,47 @@ add_cuci_description(
   drop_key = TRUE
 )
 }
+\arguments{
+\item{x}{A data frame containing a column \code{ncm} with NCM codes.}
+
+\item{level}{A string specifying the CUCI aggregation level to use.
+Must be one of:
+\itemize{
+\item \code{"basic_heading"}
+\item \code{"subgroup"}
+\item \code{"group"}
+\item \code{"division"}
+\item \code{"section"}
+\item \code{"all"} (returns all available CUCI levels)
+}}
+
+\item{drop_key}{Logical. If \code{TRUE} (the default), the intermediate join key
+\code{cuci_basic_heading_code} is removed from the output.}
+}
+\value{
+A data frame with the same rows as \code{x}, extended with one or more CUCI
+description columns corresponding to the specified level(s).
+}
 \description{
-Add CUCI (SITC) level descriptions based on Comex Stat's CUCI table (STIC table)
+This function adds textual descriptions from the CUCI (SITC) classification
+to a dataset containing NCM codes. Only portuguese descriptions are available.
+}
+\details{
+When \code{level = "all"}, all CUCI description columns are returned.
+Otherwise, only the column corresponding to the chosen level is included.
+}
+\examples{
+\dontrun{
+library(dplyr)
+
+# Example input tibble with NCM codes
+df <- tibble(ncm = c("01012100", "02011000"))
+
+# Add CUCI descriptions at the group level
+df_with_cuci <- add_cuci_description(df, level = "group")
+
+# Add CUCI descriptions at all levels
+df_all <- add_cuci_description(df, level = "all")
+}
+
 }
