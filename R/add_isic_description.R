@@ -31,8 +31,8 @@ add_isic_description <- function(
     ")"
   )
 
-  utils::data("ncm_table", package = "comexstat", envir = environment())
-  utils::data("isic_table", package = "comexstat", envir = environment())
+  ncm_table <- get_ncm_table(verbose = FALSE)
+  isic_table <- get_isic_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,

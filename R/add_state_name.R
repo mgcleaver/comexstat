@@ -5,8 +5,7 @@ add_state_name <- function(
     x,
     drop_key = TRUE
 ) {
-
-  utils::data("state_table", package = "comexstat", envir = environment())
+  state_table <- get_state_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,

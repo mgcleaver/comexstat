@@ -16,22 +16,20 @@
 #' @docType data
 NULL
 
-#' Comex Stat's CUCI (STIC) code and description table - only in portuguese
+#' Comex Stat's state table
 #'
-#' A table containing unit codes and descriptions
+#' A table containing state codes, abbreviations, names and regions
 #'
-#' @format A tibble with 2971 rows and 6 columns:
+#' @format A tibble with 27 rows and 4 columns:
 #' \describe{
-#'   \item{cuci_basic_heading_code}{CUCI basic heading code}
-#'   \item{cuci_basic_heading_desc_pt}{CUCI basic heading description in Portuguese.}
-#'   \item{cuci_subgroup_desc_pt}{CUCI subgroup description in Portuguese.}
-#'   \item{cuci_group_desc_pt}{CUCI group description in Portuguese.}
-#'   \item{cuci_division_desc_pt}{CUCI division description in Portuguese.}
-#'   \item{cuci_section_desc_pt}{CUCI section description in Portuguese.}
+#'   \item{state_code}{State numeric code.}
+#'   \item{state}{State abbreviation.}
+#'   \item{state_name}{State full name in Portuguese.}
+#'   \item{region_name}{Brazilian macro region name.}
 #' }
 #'
-#' @source \url{https://balanca.economia.gov.br/balanca/bd/tabelas/NCM_CUCI.csv}
+#' @source \url{https://balanca.economia.gov.br/balanca/bd/tabelas/UF.csv}
 #' @keywords internal
-#' @name cuci_table
+#' @name state_table
 #' @docType data
 NULL

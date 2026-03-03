@@ -32,7 +32,7 @@ add_units <- function(
     pt = "unit_description_pt"
   )
 
-  utils::data("ncm_table", package = "comexstat", envir = environment())
+  ncm_table <- get_ncm_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,

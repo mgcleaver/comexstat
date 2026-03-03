@@ -15,12 +15,12 @@ add_ncm_description <- function(
     es = "ncm_description_es"
   )
 
-  utils::data("ncm_table", package = "comexstat", envir = environment())
+  ncm_table <- get_ncm_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,
     dplyr::select(ncm_table, ncm, dplyr::all_of(name_col)),
-    by = "country_code"
+    by = "ncm"
   )
 
   if (drop_key) {

@@ -58,8 +58,8 @@ add_cuci_description <- function(
     ")"
   )
 
-  utils::data("ncm_table", package = "comexstat", envir = environment())
-  cuci_table <- get("cuci_table", envir = asNamespace("comexstat"))
+  ncm_table <- get_ncm_table(verbose = FALSE)
+  cuci_table <- get_cuci_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,

@@ -37,7 +37,7 @@ add_country_name <- function(
     es = "country_name_es"
   )
 
-  utils::data("country_table", package = "comexstat", envir = environment())
+  country_table <- get_country_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,
