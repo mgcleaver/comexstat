@@ -148,7 +148,8 @@ download_correlation_table <- function(url) {
 #'
 #' @return A `tibble` containing the cleaned correlation table.
 #'
-#' @details Uses Latin-1 encoding. Column names are cleaned using `janitor::clean_names()`.
+#' @details Tries multiple file encodings and selects the one with better
+#' text quality. Column names are cleaned using `janitor::clean_names()`.
 #'
 #' @examples
 #' \dontrun{
@@ -159,14 +160,117 @@ download_correlation_table <- function(url) {
 #'
 #' @keywords internal
 #' @noRd
-read_correlation_table <- function(path) {
-  utils::read.csv2(
+correlation_table_encoding_score <- function(df) {
+  char_cols <- names(df)[vapply(df, is.character, logical(1))]
+  if (length(char_cols) == 0) {
+    return(0)
+  }
+
+  values <- unlist(df[char_cols], use.names = FALSE)
+  values <- values[!is.na(values)]
+  if (length(values) == 0) {
+    return(0)
+  }
+
+  max_values <- min(10000L, length(values))
+  sample_text <- paste(values[seq_len(max_values)], collapse = " ")
+  sample_text <- enc2utf8(sample_text)
+
+  bad_count <- 0L
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("Ã"))
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("Â"))
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("�"))
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("â€"))
+
+  good_count <- stringr::str_count(
+    sample_text,
+    "[áéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ]"
+  )
+
+  (bad_count * 10L) - good_count
+}
+
+#' Convert character columns to UTF-8
+#'
+#' @param df A data.frame.
+#'
+#' @return A data.frame with UTF-8 character columns.
+#' @keywords internal
+#' @noRd
+normalize_character_columns_utf8 <- function(df) {
+  char_cols <- names(df)[vapply(df, is.character, logical(1))]
+  for (col in char_cols) {
+    df[[col]] <- enc2utf8(df[[col]])
+  }
+  df
+}
+
+#' Read a correlation table trying different encodings
+#'
+#' @param path Character. Full path to file.
+#' @param encodings Character vector with candidate encodings.
+#'
+#' @return A list with selected `data` and `encoding`.
+#' @keywords internal
+#' @noRd
+read_correlation_table_with_best_encoding <- function(
     path,
-    fileEncoding = "Latin1",
-    stringsAsFactors = FALSE
-  ) |>
+    encodings = c("UTF-8", "Latin1", "Windows-1252")
+) {
+  attempts <- list()
+
+  for (enc in encodings) {
+    read_attempt <- tryCatch(
+      {
+        raw_df <- utils::read.csv2(
+          path,
+          fileEncoding = enc,
+          stringsAsFactors = FALSE
+        )
+
+        normalized_df <- normalize_character_columns_utf8(raw_df)
+        score <- correlation_table_encoding_score(normalized_df)
+
+        list(
+          encoding = enc,
+          score = score,
+          data = normalized_df
+        )
+      },
+      error = function(e) NULL
+    )
+
+    if (!is.null(read_attempt)) {
+      attempts[[length(attempts) + 1L]] <- read_attempt
+    }
+  }
+
+  if (length(attempts) == 0) {
+    stop(
+      "Failed to read correlation table with tried encodings: ",
+      paste(encodings, collapse = ", "),
+      "."
+    )
+  }
+
+  scores <- vapply(attempts, function(x) x$score, numeric(1))
+  best_idx <- which.min(scores)
+  attempts[[best_idx]]
+}
+
+#' Read a correlation table from a CSV file
+#'
+#' @param path Character. Full path to the `.csv` file to read.
+#'
+#' @return A `tibble` containing the cleaned correlation table.
+#' @keywords internal
+#' @noRd
+read_correlation_table <- function(path) {
+  selected <- read_correlation_table_with_best_encoding(path = path)
+  selected$data |>
     janitor::clean_names() |>
-    tibble::as_tibble()
+    tibble::as_tibble() |>
+    structure(source_encoding = selected$encoding)
 }
 
 #' Rename selected columns if present in a data frame
@@ -316,11 +420,17 @@ read_correlation_table_cache <- function(table_code) {
 #' @param table_code Character. Correlation table code.
 #' @param table_data Tibble/data.frame with table content.
 #' @param source_url Character. Download URL used to fetch the table.
+#' @param source_encoding Character. Chosen file encoding used for reading.
 #'
 #' @return Invisible NULL.
 #' @keywords internal
 #' @noRd
-write_correlation_table_cache <- function(table_code, table_data, source_url) {
+write_correlation_table_cache <- function(
+    table_code,
+    table_data,
+    source_url,
+    source_encoding = NA_character_
+) {
   data_path <- correlation_cache_data_path(table_code)
   meta_path <- correlation_cache_meta_path(table_code)
   downloaded_at <- Sys.time()
@@ -328,6 +438,7 @@ write_correlation_table_cache <- function(table_code, table_data, source_url) {
   meta <- list(
     table_code = table_code,
     source_url = source_url,
+    source_encoding = source_encoding,
     downloaded_at = downloaded_at,
     n_rows = nrow(table_data),
     n_cols = ncol(table_data)
@@ -399,13 +510,17 @@ download_correlation_table_data <- function(table_code) {
   source_url <- resolve_correlation_table_url(links[[1]])
   download_path <- download_correlation_table(source_url)
 
-  table_data <- read_correlation_table(download_path) |>
+  raw_table <- read_correlation_table(download_path)
+  source_encoding <- attr(raw_table, "source_encoding", exact = TRUE)
+
+  table_data <- raw_table |>
     rename_columns_if_present() |>
     post_process_correlation_table(table_code)
 
   list(
     data = table_data,
-    source_url = source_url
+    source_url = source_url,
+    source_encoding = source_encoding
   )
 }
 
@@ -468,12 +583,18 @@ get_correlation_table_cached <- function(
   if (!is.null(cached)) {
     is_stale <- is_correlation_cache_stale(cached$meta, max_age_days)
     cache_date <- format_cache_datetime(cached$meta$downloaded_at)
+    cache_encoding <- cached$meta$source_encoding
+    cache_encoding_msg <- if (!is.null(cache_encoding) && !is.na(cache_encoding)) {
+      paste0(" (encoding: ", cache_encoding, ")")
+    } else {
+      ""
+    }
 
     if (!refresh && !is_stale) {
       if (verbose) {
         message(
           "Using cached '", table_code,
-          "' downloaded at ", cache_date, "."
+          "' downloaded at ", cache_date, cache_encoding_msg, "."
         )
       }
       return(cached$data)
@@ -482,6 +603,7 @@ get_correlation_table_cached <- function(
     if (verbose) {
       message(
         "Cached '", table_code, "' downloaded at ", cache_date,
+        cache_encoding_msg,
         " is stale or refresh was requested. Trying to update..."
       )
     }
@@ -500,14 +622,23 @@ get_correlation_table_cached <- function(
     write_correlation_table_cache(
       table_code = table_code,
       table_data = download_result$data,
-      source_url = download_result$source_url
+      source_url = download_result$source_url,
+      source_encoding = download_result$source_encoding
     )
 
     if (verbose) {
+      encoding_msg <- if (!is.null(download_result$source_encoding) &&
+        !is.na(download_result$source_encoding)) {
+        paste0(" (encoding: ", download_result$source_encoding, ")")
+      } else {
+        ""
+      }
+
       message(
         "Downloaded and cached '", table_code,
         "' at ",
         format_cache_datetime(Sys.time()),
+        encoding_msg,
         "."
       )
     }
@@ -520,6 +651,7 @@ get_correlation_table_cached <- function(
         "Update failed for '", table_code,
         "'. Using cached version downloaded at ",
         format_cache_datetime(cached$meta$downloaded_at),
+        cache_encoding_msg,
         ". Error: ",
         download_result$message
       )
