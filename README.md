@@ -2,39 +2,32 @@
 
 ## Overview
 
-comexstat creates an Apache Arrow database in a user-specified directory using 
-export and import data from Comex Stat, Brazil’s official foreign trade data 
-portal.
-The package also includes functionality to update the database as new data becomes
-available.
+comexstat creates an Apache Arrow database in a user-specified directory using export and import data from Comex Stat, Brazil’s official foreign trade data portal. The package also includes functionality to update the database as new data becomes available.
 
-The database is organized into two subfolders — one for exports and another for
-imports — within the specified directory. The database contains the following
-columns:
+The database is organized into two subfolders — one for exports and another for imports — within the specified directory. The database contains the following columns:
 
-- year
-- month
-- ncm
-- state (Brazilian state abbreviation)
-- country code
-- fob value (in dollars)
-- cif value (only for imports and in dollars)
-- kg (net weight in kilograms)
-- qty (quantity)
+-   year
+-   month
+-   ncm
+-   state (Brazilian state abbreviation)
+-   country code
+-   fob value (in dollars)
+-   cif value (only for imports and in dollars)
+-   kg (net weight in kilograms)
+-   qty (quantity)
 
 ## Installation
 
 To install the development version:
 
-```
+```         
 # install.packages("pak")
 pak::pak("mgcleaver/comexstat")
 ```
 
-
 ## Usage
 
-```
+```         
 library(comexstat)
 library(arrow)
 library(dplyr)
