@@ -12,8 +12,8 @@
 #'   - `"n2"`
 #'   - `"n1"`
 #'   - `"all"` (returns all available BEC levels)
-#' @param drop_key Logical. If `TRUE` (the default), the intermediate join key
-#'   `bec_n3_code` is removed from the output.
+#' @param drop_code Logical. If `TRUE` (the default), all column codes are removed
+#' from output.
 #'
 #' @return
 #' A data frame with the same rows as `x`, extended with one or more BEC
@@ -41,7 +41,7 @@ add_bec_description <- function(
     x,
     lang = c("en", "pt", "es"),
     level = c("n3", "n2", "n1", "all"),
-    drop_key = TRUE
+    drop_code = TRUE
 ) {
   lang <- match.arg(lang)
   level <- match.arg(level)
@@ -53,15 +53,21 @@ add_bec_description <- function(
     es = "desc_es$"
   )
 
-  level_col <- dplyr::if_else(
-    level == "all",
-    "n3|n2|n1",
-    level
-  )
+  if (level == "all") {
+    level_col_desc <- "(n3|n2|n1)"
+    regex_col_code <- paste0(
+      c("n3", "n2", "n1"),
+      "_code",
+      collapse = "|"
+      )
+  } else {
+    level_col_desc <- level
+    regex_col_code <- paste0(level, "_code")
+  }
 
-  regex_col_select <- paste0(
+  regex_col_desc <- paste0(
     "(?=.*",
-    level_col,
+    level_col_desc,
     ")(?=.*",
     lang_col,
     ")"
@@ -79,13 +85,24 @@ add_bec_description <- function(
       dplyr::select(
         bec_table,
         bec_n3_code,
-        dplyr::matches(regex_col_select, perl = TRUE)
+        dplyr::matches(regex_col_code, perl = TRUE),
+        dplyr::matches(regex_col_desc, perl = TRUE)
       ),
       by = "bec_n3_code"
     )
 
-  if (drop_key) {
-    temp <- dplyr::select(temp, -bec_n3_code)
+  if (level != "n3" & level != "all") {
+    temp <- temp |>
+      dplyr::select(-dplyr::matches("n3"))
+  }
+
+  if (drop_code) {
+    remove_codes <- temp |>
+      dplyr::select(dplyr::matches("code")) |>
+      names() |>
+      stringr::str_subset("country", negate = TRUE) |>
+      paste0(collapse = "|")
+    temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
 
   temp

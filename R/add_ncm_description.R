@@ -3,8 +3,8 @@
 #' @export
 add_ncm_description <- function(
     x,
-    lang = c("en","pt", "es"),
-    drop_key = FALSE
+    lang = c("en", "pt", "es"),
+    drop_code = FALSE
 ) {
   lang <- match.arg(lang)
 
@@ -23,7 +23,7 @@ add_ncm_description <- function(
     by = "ncm"
   )
 
-  if (drop_key) {
+  if (drop_code) {
     temp <- dplyr::select(temp, -ncm)
   }
 

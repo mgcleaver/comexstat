@@ -12,7 +12,7 @@
 #' @param lang A string indicating the desired language for the unit description.
 #'   Must be `"en"` (English) or `"pt"` (Portuguese).
 #'   Defaults to `"en"`.
-#' @param drop_key Logical. If `TRUE` (default), the `unit_code` column is
+#' @param drop_code Logical. If `TRUE` (default), the `unit_code` column is
 #' not included in the final table.
 #'
 #' @return A tibble or data frame with the unit_description. In case drop_key =
@@ -22,7 +22,7 @@
 add_units <- function(
     x,
     lang = c("en","pt"),
-    drop_key = TRUE
+    drop_code = TRUE
 ) {
   lang <- match.arg(lang)
 
@@ -46,7 +46,7 @@ add_units <- function(
     by = "unit_code"
   )
 
-  if (drop_key) {
+  if (drop_code) {
     temp <- dplyr::select(temp, -unit_code)
   }
 

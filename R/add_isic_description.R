@@ -5,7 +5,7 @@ add_isic_description <- function(
     x,
     lang = c("en","pt", "es"),
     level = c("class", "group", "division", "section", "all"),
-    drop_key = TRUE
+    drop_code = TRUE
 ){
   lang <- match.arg(lang)
   level <- match.arg(level)
@@ -17,15 +17,21 @@ add_isic_description <- function(
     es = "desc_es$"
   )
 
-  level_col <- dplyr::if_else(
-    level == "all",
-    "class|group|division|section",
-    level
+  if (level == "all") {
+    level_col_desc <- "(class|group|division|section)"
+    regex_col_code <- paste0(
+      c("class", "group", "division", "section"),
+      "_code",
+      collapse = "|"
     )
+  } else {
+    level_col_desc <- level
+    regex_col_code <- paste0(level, "_code")
+  }
 
-  regex_col_select <- paste0(
+  regex_col_desc <- paste0(
     "(?=.*",
-    level_col,
+    level_col_desc,
     ")(?=.*",
     lang_col,
     ")"
@@ -43,12 +49,24 @@ add_isic_description <- function(
       dplyr::select(
         isic_table,
         isic_class_code,
-        dplyr::matches(regex_col_select, perl = TRUE)),
+        dplyr::matches(regex_col_code, perl = TRUE),
+        dplyr::matches(regex_col_desc, perl = TRUE)
+      ),
       by = "isic_class_code"
     )
 
-  if (drop_key) {
-    temp <- dplyr::select(temp, -isic_class_code)
+  if (level != "class" & level != "all") {
+    temp <- temp |>
+      dplyr::select(-dplyr::matches("class"))
+  }
+
+  if (drop_code) {
+    remove_codes <- temp |>
+      dplyr::select(dplyr::matches("code")) |>
+      names() |>
+      stringr::str_subset("country", negate = TRUE) |>
+      paste0(collapse = "|")
+    temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
 
   return(temp)

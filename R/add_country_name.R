@@ -12,7 +12,7 @@
 #' @param lang A string indicating the desired language for the country name.
 #'   Must be one of `"en"` (English), `"pt"` (Portuguese), or `"es"` (Spanish).
 #'   Defaults to `"en"`.
-#' @param drop_key Logical. If `TRUE` (default), the `country_code` column is
+#' @param drop_code Logical. If `TRUE` (default), the `country_code` column is
 #' dropped after the join.
 #'
 #' @return A data frame with a new column for the country name in the selected
@@ -26,7 +26,7 @@
 add_country_name <- function(
     x,
     lang = c("en","pt", "es"),
-    drop_key = TRUE
+    drop_code = TRUE
 ) {
   lang <- match.arg(lang)
 
@@ -45,7 +45,7 @@ add_country_name <- function(
     by = "country_code"
   )
 
-  if (drop_key) {
+  if (drop_code) {
     temp <- dplyr::select(temp, -country_code)
   }
 

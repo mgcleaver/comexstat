@@ -3,7 +3,7 @@
 #' @export
 add_state_name <- function(
     x,
-    drop_key = TRUE
+    drop_code = TRUE
 ) {
   state_table <- get_state_table(verbose = FALSE)
 
@@ -13,7 +13,7 @@ add_state_name <- function(
     by = "state"
   )
 
-  if (drop_key) {
+  if (drop_code) {
     temp <- dplyr::select(temp, -state)
   }
 

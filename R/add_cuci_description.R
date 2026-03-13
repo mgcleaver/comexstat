@@ -13,8 +13,8 @@
 #'   - `"section"`
 #'   - `"all"` (returns all available CUCI levels)
 #'
-#' @param drop_key Logical. If `TRUE` (the default), the intermediate join key
-#'   `cuci_basic_heading_code` is removed from the output.
+#' @param drop_code Logical. If `TRUE` (the default), all column codes are removed
+#' from output.
 #'
 #' @return
 #' A data frame with the same rows as `x`, extended with one or more CUCI
@@ -42,7 +42,7 @@
 add_cuci_description <- function(
     x,
     level = c("basic_heading", "subgroup", "group", "division", "section", "all"),
-    drop_key = TRUE
+    drop_code = TRUE
       ) {
   level <- match.arg(level)
 
@@ -53,7 +53,7 @@ add_cuci_description <- function(
   )
 
   regex_col_select <- paste0(
-    "(?=.*",
+    "(?=.*_",
     level_col,
     ")"
   )
@@ -70,12 +70,25 @@ add_cuci_description <- function(
       dplyr::select(
         cuci_table,
         cuci_basic_heading_code,
+        cuci_basic_heading_desc_pt,
         dplyr::matches(regex_col_select, perl = TRUE)),
       by = "cuci_basic_heading_code"
     )
 
-  if (drop_key) {
-    temp <- dplyr::select(temp, -cuci_basic_heading_code)
+  if (level != "basic_heading" & level != "all") {
+    temp <- temp |>
+      select(
+        -dplyr::matches("basic_heading")
+      )
+  }
+
+  if (drop_code) {
+    remove_codes <- temp |>
+      dplyr::select(dplyr::matches("code")) |>
+      names() |>
+      stringr::str_subset("country", negate = TRUE) |>
+      paste0(collapse = "|")
+    temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
 
   return(temp)
