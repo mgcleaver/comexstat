@@ -2,10 +2,31 @@
 % Please edit documentation in R/add_ncm_description.R
 \name{add_ncm_description}
 \alias{add_ncm_description}
-\title{Add Comex Stat's NCM descriptions}
+\title{Add NCM descriptions from Comex Stat}
 \usage{
-add_ncm_description(x, lang = c("en", "pt", "es"), drop_key = FALSE)
+add_ncm_description(x, lang = c("en", "pt", "es"), drop_code = FALSE)
+}
+\arguments{
+\item{x}{A data frame containing an \code{ncm} column.}
+
+\item{lang}{Language of the appended description. Must be one of \code{"en"},
+\code{"pt"}, or \code{"es"}.}
+
+\item{drop_code}{Logical. If \code{TRUE}, removes \code{ncm} from the result after the
+join. Defaults to \code{FALSE}.}
+}
+\value{
+A data frame with the same rows as \code{x}, plus one of
+\code{ncm_description}, \code{ncm_description_pt}, or \code{ncm_description_es}.
 }
 \description{
-Add Comex Stat's NCM descriptions
+Joins the Comex Stat NCM correlation table to \code{x} using the \code{ncm} column and
+appends a description column in the requested language.
+}
+\examples{
+\dontrun{
+df <- data.frame(ncm = c("01012100", "02011000"))
+add_ncm_description(df, lang = "es")
+}
+
 }

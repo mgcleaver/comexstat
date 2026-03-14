@@ -1,28 +1,27 @@
-#' Add CUCI (SITC) level descriptions based on Comex Stat's CUCI table (STIC table)
+#' Add CUCI descriptions from Comex Stat
 #'
-#' This function adds textual descriptions from the CUCI (SITC) classification
-#' to a dataset containing NCM codes. Only portuguese descriptions are available.
+#' Uses the NCM and CUCI correlation tables to map each `ncm` in `x` to its
+#' CUCI classification and append Portuguese description columns for the
+#' requested aggregation level.
 #'
-#' @param x A data frame containing a column `ncm` with NCM codes.
-#' @param level A string specifying the CUCI aggregation level to use.
-#'   Must be one of:
-#'   - `"basic_heading"`
-#'   - `"subgroup"`
-#'   - `"group"`
-#'   - `"division"`
-#'   - `"section"`
-#'   - `"all"` (returns all available CUCI levels)
+#' @param x A data frame containing an `ncm` column.
+#' @param level CUCI aggregation level to return. Must be one of
+#'   `"basic_heading"`, `"subgroup"`, `"group"`, `"division"`, `"section"`,
+#'   or `"all"`.
+#' @param drop_code Logical. If `TRUE` (default), removes joined CUCI code
+#'   columns from the result.
 #'
-#' @param drop_key Logical. If `TRUE` (the default), the intermediate join key
-#'   `cuci_basic_heading_code` is removed from the output.
-#'
-#' @return
-#' A data frame with the same rows as `x`, extended with one or more CUCI
-#' description columns corresponding to the specified level(s).
+#' @return A data frame with the same rows as `x`, plus the selected CUCI
+#'   description columns. When `drop_code = FALSE`, the corresponding CUCI code
+#'   columns are also retained.
 #'
 #' @details
-#' When `level = "all"`, all CUCI description columns are returned.
-#' Otherwise, only the column corresponding to the chosen level is included.
+#' Only Portuguese CUCI descriptions are available in the source table. The
+#' function first joins `x` to the NCM table to recover
+#' `cuci_basic_heading_code`, then joins the CUCI table. When `level = "all"`,
+#' all CUCI description levels are returned. When `level` is not
+#' `"basic_heading"` or `"all"`, intermediate `basic_heading` columns are
+#' removed from the final output.
 #'
 #' @examples
 #' \dontrun{
@@ -42,7 +41,7 @@
 add_cuci_description <- function(
     x,
     level = c("basic_heading", "subgroup", "group", "division", "section", "all"),
-    drop_key = TRUE
+    drop_code = TRUE
       ) {
   level <- match.arg(level)
 
@@ -53,13 +52,13 @@ add_cuci_description <- function(
   )
 
   regex_col_select <- paste0(
-    "(?=.*",
+    "(?=.*_",
     level_col,
     ")"
   )
 
-  utils::data("ncm_table", package = "comexstat", envir = environment())
-  cuci_table <- get("cuci_table", envir = asNamespace("comexstat"))
+  ncm_table <- get_ncm_table(verbose = FALSE)
+  cuci_table <- get_cuci_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,
@@ -70,12 +69,25 @@ add_cuci_description <- function(
       dplyr::select(
         cuci_table,
         cuci_basic_heading_code,
+        cuci_basic_heading_desc_pt,
         dplyr::matches(regex_col_select, perl = TRUE)),
       by = "cuci_basic_heading_code"
     )
 
-  if (drop_key) {
-    temp <- dplyr::select(temp, -cuci_basic_heading_code)
+  if (level != "basic_heading" & level != "all") {
+    temp <- temp |>
+      dplyr::select(
+        -dplyr::matches("basic_heading")
+      )
+  }
+
+  if (drop_code) {
+    remove_codes <- temp |>
+      dplyr::select(dplyr::matches("code")) |>
+      names() |>
+      stringr::str_subset("country", negate = TRUE) |>
+      paste0(collapse = "|")
+    temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
 
   return(temp)

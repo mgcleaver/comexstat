@@ -2,36 +2,32 @@
 % Please edit documentation in R/add_country_name.R
 \name{add_country_name}
 \alias{add_country_name}
-\title{Add country name based on Comex Stat's country code}
+\title{Add country names from Comex Stat country codes}
 \usage{
-add_country_name(x, lang = c("en", "pt", "es"), drop_key = TRUE)
+add_country_name(x, lang = c("en", "pt", "es"), drop_code = TRUE)
 }
 \arguments{
-\item{x}{A data frame that must contain a \code{country_code} column with
-valid country codes.}
+\item{x}{A data frame containing a \code{country_code} column.}
 
-\item{lang}{A string indicating the desired language for the country name.
-Must be one of \code{"en"} (English), \code{"pt"} (Portuguese), or \code{"es"} (Spanish).
-Defaults to \code{"en"}.}
+\item{lang}{Language of the appended country name. Must be one of \code{"en"},
+\code{"pt"}, or \code{"es"}.}
 
-\item{drop_key}{Logical. If \code{TRUE} (default), the \code{country_code} column is
-dropped after the join.}
+\item{drop_code}{Logical. If \code{TRUE} (default), removes \code{country_code} from
+the result after the join.}
 }
 \value{
-A data frame with a new column for the country name in the selected
-language.
+A data frame with the same rows as \code{x}, plus one of
+\code{country_name}, \code{country_name_pt}, or \code{country_name_es}. When
+\code{drop_code = TRUE}, the \code{country_code} column is removed from the output.
 }
 \description{
-A convenience wrapper that joins a country name to the Comex Stat database
-based on the \code{country_code} column.
-}
-\details{
-This function performs a left join between the input data frame and an
-external reference table \code{country_table},
-adding a country name column in the desired language (\code{en}, \code{pt}, or \code{es}).
+Joins the Comex Stat country correlation table to \code{x} using \code{country_code}
+and appends a single country-name column in the requested language.
 }
 \examples{
+\dontrun{
 df <- data.frame(country_code = c(20, 23, 40))
 add_country_name(df, lang = "pt")
+}
 
 }

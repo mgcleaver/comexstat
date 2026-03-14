@@ -1,11 +1,40 @@
-#' Add ISIC level descriptions based on Comex Stat's ISIC table
+#' Add ISIC descriptions from Comex Stat
+#'
+#' Uses the NCM and ISIC correlation tables to map each `ncm` in `x` to its
+#' ISIC classification and append description columns for the requested
+#' aggregation level.
+#'
+#' @param x A data frame containing an `ncm` column.
+#' @param lang Language of the appended ISIC descriptions. Must be one of
+#'   `"en"`, `"pt"`, or `"es"`.
+#' @param level ISIC aggregation level to return. Must be one of `"class"`,
+#'   `"group"`, `"division"`, `"section"`, or `"all"`.
+#' @param drop_code Logical. If `TRUE` (default), removes joined ISIC code
+#'   columns from the result.
+#'
+#' @return A data frame with the same rows as `x`, plus the selected ISIC
+#'   description columns for the requested language. When `drop_code = FALSE`,
+#'   the corresponding ISIC code columns are also retained.
+#'
+#' @details
+#' The function first joins `x` to the NCM table to recover `isic_class_code`
+#' and then joins the ISIC table to retrieve the requested descriptions. When
+#' `level = "all"`, descriptions for all available ISIC levels are returned.
+#' When `level` is not `"class"` or `"all"`, intermediate `class` columns are
+#' removed from the final output.
+#'
+#' @examples
+#' \dontrun{
+#' df <- data.frame(ncm = c("01012100", "02011000"))
+#' add_isic_description(df, lang = "en", level = "division")
+#' }
 #'
 #' @export
 add_isic_description <- function(
     x,
     lang = c("en","pt", "es"),
     level = c("class", "group", "division", "section", "all"),
-    drop_key = TRUE
+    drop_code = TRUE
 ){
   lang <- match.arg(lang)
   level <- match.arg(level)
@@ -17,22 +46,28 @@ add_isic_description <- function(
     es = "desc_es$"
   )
 
-  level_col <- dplyr::if_else(
-    level == "all",
-    "class|group|division|section",
-    level
+  if (level == "all") {
+    level_col_desc <- "(class|group|division|section)"
+    regex_col_code <- paste0(
+      c("class", "group", "division", "section"),
+      "_code",
+      collapse = "|"
     )
+  } else {
+    level_col_desc <- level
+    regex_col_code <- paste0(level, "_code")
+  }
 
-  regex_col_select <- paste0(
+  regex_col_desc <- paste0(
     "(?=.*",
-    level_col,
+    level_col_desc,
     ")(?=.*",
     lang_col,
     ")"
   )
 
-  utils::data("ncm_table", package = "comexstat", envir = environment())
-  utils::data("isic_table", package = "comexstat", envir = environment())
+  ncm_table <- get_ncm_table(verbose = FALSE)
+  isic_table <- get_isic_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,
@@ -43,12 +78,24 @@ add_isic_description <- function(
       dplyr::select(
         isic_table,
         isic_class_code,
-        dplyr::matches(regex_col_select, perl = TRUE)),
+        dplyr::matches(regex_col_code, perl = TRUE),
+        dplyr::matches(regex_col_desc, perl = TRUE)
+      ),
       by = "isic_class_code"
     )
 
-  if (drop_key) {
-    temp <- dplyr::select(temp, -isic_class_code)
+  if (level != "class" & level != "all") {
+    temp <- temp |>
+      dplyr::select(-dplyr::matches("class"))
+  }
+
+  if (drop_code) {
+    remove_codes <- temp |>
+      dplyr::select(dplyr::matches("code")) |>
+      names() |>
+      stringr::str_subset("country", negate = TRUE) |>
+      paste0(collapse = "|")
+    temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
 
   return(temp)

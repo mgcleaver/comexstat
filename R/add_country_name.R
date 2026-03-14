@@ -1,32 +1,29 @@
-#' Add country name based on Comex Stat's country code
+#' Add country names from Comex Stat country codes
 #'
-#' A convenience wrapper that joins a country name to the Comex Stat database
-#' based on the `country_code` column.
+#' Joins the Comex Stat country correlation table to `x` using `country_code`
+#' and appends a single country-name column in the requested language.
 #'
-#' This function performs a left join between the input data frame and an
-#' external reference table `country_table`,
-#' adding a country name column in the desired language (`en`, `pt`, or `es`).
+#' @param x A data frame containing a `country_code` column.
+#' @param lang Language of the appended country name. Must be one of `"en"`,
+#'   `"pt"`, or `"es"`.
+#' @param drop_code Logical. If `TRUE` (default), removes `country_code` from
+#'   the result after the join.
 #'
-#' @param x A data frame that must contain a `country_code` column with
-#' valid country codes.
-#' @param lang A string indicating the desired language for the country name.
-#'   Must be one of `"en"` (English), `"pt"` (Portuguese), or `"es"` (Spanish).
-#'   Defaults to `"en"`.
-#' @param drop_key Logical. If `TRUE` (default), the `country_code` column is
-#' dropped after the join.
-#'
-#' @return A data frame with a new column for the country name in the selected
-#' language.
+#' @return A data frame with the same rows as `x`, plus one of
+#'   `country_name`, `country_name_pt`, or `country_name_es`. When
+#'   `drop_code = TRUE`, the `country_code` column is removed from the output.
 #'
 #' @examples
+#' \dontrun{
 #' df <- data.frame(country_code = c(20, 23, 40))
 #' add_country_name(df, lang = "pt")
+#' }
 #'
 #' @export
 add_country_name <- function(
     x,
     lang = c("en","pt", "es"),
-    drop_key = TRUE
+    drop_code = TRUE
 ) {
   lang <- match.arg(lang)
 
@@ -37,7 +34,7 @@ add_country_name <- function(
     es = "country_name_es"
   )
 
-  utils::data("country_table", package = "comexstat", envir = environment())
+  country_table <- get_country_table(verbose = FALSE)
 
   temp <- dplyr::left_join(
     x,
@@ -45,7 +42,7 @@ add_country_name <- function(
     by = "country_code"
   )
 
-  if (drop_key) {
+  if (drop_code) {
     temp <- dplyr::select(temp, -country_code)
   }
 

@@ -2,32 +2,36 @@
 % Please edit documentation in R/create_cs_db.R
 \name{update_cs_db}
 \alias{update_cs_db}
-\title{Update Local Comex Stat Database}
+\title{Update a local Comex Stat database}
 \usage{
 update_cs_db(dest_dir, start_year = NULL, timeout = 2000)
 }
 \arguments{
-\item{dest_dir}{Character string. Path to the base directory of the local database (same used in \code{create_cs_db()}).}
+\item{dest_dir}{Character string. Base directory of a database previously
+created with \code{\link[=create_cs_db]{create_cs_db()}}.}
 
-\item{start_year}{Integer. If supplied, besides updating, the function will check if the desired first year
-is included in the Comex Stat dataset. In case it is not it will download all
-years not included in the dataset starting from start_year. .
-If \code{NULL}, the function will only will try to update the dataset.}
+\item{start_year}{Integer or \code{NULL}. If \code{NULL} (default), the function
+infers a starting year from the local data already available and only
+attempts to update from there. If a year is supplied, the function also
+checks whether yearly files from that point onward are missing locally and
+downloads them when necessary.}
 
-\item{timeout}{Integer. Timeout limit in seconds for HTTP requests. Default is \code{2000}.}
+\item{timeout}{Integer. Timeout in seconds applied through
+\code{options(timeout = ...)} before downloads. Defaults to \code{2000}.}
 }
 \value{
-No return value. Side effect: updates existing local Arrow datasets with newer data from the official Comex Stat raw files.
+No return value. Side effect: updates existing Arrow datasets with
+newly downloaded Comex Stat files.
 }
 \description{
-Checks if the local database is outdated and updates data if necessary.
+Checks the import and export Arrow datasets in \code{dest_dir} and downloads any
+missing or outdated yearly files from the official Comex Stat source.
 }
 \details{
-This function compares the date in the local Arrow datasets with the most recent date in
-the official database files. In case local dataset is not updated, the function
-will update local data.
-
-If the local database is already up-to-date, the function stops with a message.
+The function compares the most recent local month with the date returned by
+the official update API. It stops with an error if the local datasets cannot
+be opened or if the database is already up to date and the requested years
+are already present.
 }
 \examples{
 \dontrun{

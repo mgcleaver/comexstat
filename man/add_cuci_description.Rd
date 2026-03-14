@@ -2,42 +2,41 @@
 % Please edit documentation in R/add_cuci_description.R
 \name{add_cuci_description}
 \alias{add_cuci_description}
-\title{Add CUCI (SITC) level descriptions based on Comex Stat's CUCI table (STIC table)}
+\title{Add CUCI descriptions from Comex Stat}
 \usage{
 add_cuci_description(
   x,
   level = c("basic_heading", "subgroup", "group", "division", "section", "all"),
-  drop_key = TRUE
+  drop_code = TRUE
 )
 }
 \arguments{
-\item{x}{A data frame containing a column \code{ncm} with NCM codes.}
+\item{x}{A data frame containing an \code{ncm} column.}
 
-\item{level}{A string specifying the CUCI aggregation level to use.
-Must be one of:
-\itemize{
-\item \code{"basic_heading"}
-\item \code{"subgroup"}
-\item \code{"group"}
-\item \code{"division"}
-\item \code{"section"}
-\item \code{"all"} (returns all available CUCI levels)
-}}
+\item{level}{CUCI aggregation level to return. Must be one of
+\code{"basic_heading"}, \code{"subgroup"}, \code{"group"}, \code{"division"}, \code{"section"},
+or \code{"all"}.}
 
-\item{drop_key}{Logical. If \code{TRUE} (the default), the intermediate join key
-\code{cuci_basic_heading_code} is removed from the output.}
+\item{drop_code}{Logical. If \code{TRUE} (default), removes joined CUCI code
+columns from the result.}
 }
 \value{
-A data frame with the same rows as \code{x}, extended with one or more CUCI
-description columns corresponding to the specified level(s).
+A data frame with the same rows as \code{x}, plus the selected CUCI
+description columns. When \code{drop_code = FALSE}, the corresponding CUCI code
+columns are also retained.
 }
 \description{
-This function adds textual descriptions from the CUCI (SITC) classification
-to a dataset containing NCM codes. Only portuguese descriptions are available.
+Uses the NCM and CUCI correlation tables to map each \code{ncm} in \code{x} to its
+CUCI classification and append Portuguese description columns for the
+requested aggregation level.
 }
 \details{
-When \code{level = "all"}, all CUCI description columns are returned.
-Otherwise, only the column corresponding to the chosen level is included.
+Only Portuguese CUCI descriptions are available in the source table. The
+function first joins \code{x} to the NCM table to recover
+\code{cuci_basic_heading_code}, then joins the CUCI table. When \code{level = "all"},
+all CUCI description levels are returned. When \code{level} is not
+\code{"basic_heading"} or \code{"all"}, intermediate \code{basic_heading} columns are
+removed from the final output.
 }
 \examples{
 \dontrun{

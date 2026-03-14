@@ -2,26 +2,23 @@
 % Please edit documentation in R/filter_states.R
 \name{filter_states}
 \alias{filter_states}
-\title{Wrapper to Filter Brazilian States}
+\title{Keep only rows for Brazilian states}
 \usage{
 filter_states(x)
 }
 \arguments{
-\item{x}{A data frame that must include a column named \code{state}.}
+\item{x}{A data frame containing a \code{state} column.}
 }
 \value{
-A filtered data frame containing only rows with valid Brazilian
-states in the \code{state} column.
+A filtered data frame containing only rows with valid Brazilian state
+abbreviations in \code{state}.
 }
 \description{
-A wrapper around \code{\link[dplyr:filter]{dplyr::filter()}} to retain only rows with
-Brazilian state abbreviations. The column state also has non-state data.
-So this wrapper filter only state data.
+Filters \code{x} to rows whose \code{state} value is one of the abbreviations stored in
+the internal \code{brazilian_states} object.
 }
 \details{
-The \code{state} column must exist in the input data frame. If missing,
-the function throws an error. The internal list of valid states is defined
-in the object \code{brazilian_states}, assumed to be loaded with the package.
+The function stops if \code{x} does not contain a \code{state} column.
 }
 \examples{
 df <- data.frame(state = c("SP", "RJ", "ND"), value = 1:3)
