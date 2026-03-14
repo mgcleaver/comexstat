@@ -1,4 +1,33 @@
-#' Add ISIC level descriptions based on Comex Stat's ISIC table
+#' Add ISIC descriptions from Comex Stat
+#'
+#' Uses the NCM and ISIC correlation tables to map each `ncm` in `x` to its
+#' ISIC classification and append description columns for the requested
+#' aggregation level.
+#'
+#' @param x A data frame containing an `ncm` column.
+#' @param lang Language of the appended ISIC descriptions. Must be one of
+#'   `"en"`, `"pt"`, or `"es"`.
+#' @param level ISIC aggregation level to return. Must be one of `"class"`,
+#'   `"group"`, `"division"`, `"section"`, or `"all"`.
+#' @param drop_code Logical. If `TRUE` (default), removes joined ISIC code
+#'   columns from the result.
+#'
+#' @return A data frame with the same rows as `x`, plus the selected ISIC
+#'   description columns for the requested language. When `drop_code = FALSE`,
+#'   the corresponding ISIC code columns are also retained.
+#'
+#' @details
+#' The function first joins `x` to the NCM table to recover `isic_class_code`
+#' and then joins the ISIC table to retrieve the requested descriptions. When
+#' `level = "all"`, descriptions for all available ISIC levels are returned.
+#' When `level` is not `"class"` or `"all"`, intermediate `class` columns are
+#' removed from the final output.
+#'
+#' @examples
+#' \dontrun{
+#' df <- data.frame(ncm = c("01012100", "02011000"))
+#' add_isic_description(df, lang = "en", level = "division")
+#' }
 #'
 #' @export
 add_isic_description <- function(

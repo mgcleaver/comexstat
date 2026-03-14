@@ -1,20 +1,26 @@
-#' Create Local Comex Stat Database from Official Raw Files
+#' Create a local Comex Stat database from official raw files
 #'
-#' Downloads and processes public Comex Stat data from the Brazilian government
-#' website, creating a local database organized in Apache Arrow format, partitioned by year.
+#' Downloads yearly Comex Stat raw CSV files from the official website,
+#' transforms them, and writes local Apache Arrow datasets partitioned by year
+#' in `dest_dir/export` and `dest_dir/import`.
 #'
-#' @param dest_dir Character string. Path to the directory where the database should be stored.
-#' @param start_year Integer. First year to include in the database (e.g., `2015`).
-#' @param timeout Integer. Timeout limit in seconds for HTTP requests. Default is `2000`.
+#' @param dest_dir Character string. Directory where the local database will be
+#'   created.
+#' @param start_year Integer. First year to include in the download window. The
+#'   official series starts in 1997.
+#' @param timeout Integer. Timeout in seconds applied through
+#'   `options(timeout = ...)` before downloads. Defaults to `2000`.
 #'
-#' @return No return value. Side effect: creates and populates local folders (`export/` and `import/`) with Arrow datasets.
+#' @return No return value. Side effect: creates and populates `export/` and
+#'   `import/` subdirectories with Arrow datasets.
 #'
 #' @details
-#' The function accesses the official Comex Stat page and downloads monthly
-#' import and export data (CSV format), processes the files, and writes them as
-#' partitioned Arrow datasets. Only data from `start_year` to the current year is included.
+#' The function scrapes the Comex Stat download page, keeps links for yearly
+#' import and export files from `start_year` through the current year, and
+#' writes the processed data to disk using Arrow schemas defined internally.
 #'
-#' The structure is ready for efficient analysis using `arrow::open_dataset()`.
+#' The resulting folder structure can be read efficiently with
+#' `arrow::open_dataset()`.
 #'
 #' @seealso [update_cs_db()]
 #'
@@ -102,25 +108,29 @@ create_cs_db <- function(
 
 }
 
-#' Update Local Comex Stat Database
+#' Update a local Comex Stat database
 #'
-#' Checks if the local database is outdated and updates data if necessary.
+#' Checks the import and export Arrow datasets in `dest_dir` and downloads any
+#' missing or outdated yearly files from the official Comex Stat source.
 #'
-#' @param dest_dir Character string. Path to the base directory of the local database (same used in `create_cs_db()`).
-#' @param start_year Integer. If supplied, besides updating, the function will check if the desired first year
-#'                   is included in the Comex Stat dataset. In case it is not it will download all
-#'                   years not included in the dataset starting from start_year. .
-#'                   If `NULL`, the function will only will try to update the dataset.
-#' @param timeout Integer. Timeout limit in seconds for HTTP requests. Default is `2000`.
+#' @param dest_dir Character string. Base directory of a database previously
+#'   created with [create_cs_db()].
+#' @param start_year Integer or `NULL`. If `NULL` (default), the function
+#'   infers a starting year from the local data already available and only
+#'   attempts to update from there. If a year is supplied, the function also
+#'   checks whether yearly files from that point onward are missing locally and
+#'   downloads them when necessary.
+#' @param timeout Integer. Timeout in seconds applied through
+#'   `options(timeout = ...)` before downloads. Defaults to `2000`.
 #'
-#' @return No return value. Side effect: updates existing local Arrow datasets with newer data from the official Comex Stat raw files.
+#' @return No return value. Side effect: updates existing Arrow datasets with
+#'   newly downloaded Comex Stat files.
 #'
 #' @details
-#' This function compares the date in the local Arrow datasets with the most recent date in
-#' the official database files. In case local dataset is not updated, the function
-#' will update local data.
-#'
-#' If the local database is already up-to-date, the function stops with a message.
+#' The function compares the most recent local month with the date returned by
+#' the official update API. It stops with an error if the local datasets cannot
+#' be opened or if the database is already up to date and the requested years
+#' are already present.
 #'
 #' @seealso [create_cs_db()]
 #'
@@ -296,4 +306,3 @@ update_cs_db <- function(
     )
   message("Update complete\n")
 }
-

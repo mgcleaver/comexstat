@@ -1,10 +1,12 @@
-#' Create Arrow Schema for Import or Export Data
+#' Create Arrow schemas for Comex Stat datasets
 #'
-#' Internal helper function to define a schema used when writing datasets.
+#' Internal helper that returns the Arrow schema used when writing processed
+#' import or export datasets.
 #'
-#' @param category Character string. Either `"export"` or `"import"`, indicating the data type.
+#' @param category Character string. Either `"export"` or `"import"`.
 #'
-#' @return An `arrow::schema` object matching the specified category.
+#' @return An `arrow::schema` object with the fields expected for the selected
+#'   dataset category.
 #'
 #' @keywords internal
 #' @noRd
@@ -41,9 +43,10 @@ create_schema <- function(category = c("export", "import")) {
   }
 }
 
-#' Compare Local Database Date with last date available in API
+#' Compare a local dataset with the latest official update
 #'
-#' Checks if the local database is up-to-date compared to the API's last update.
+#' Compares the most recent year-month available in a local Arrow dataset with
+#' the latest year-month reported by the Comex Stat update API.
 #'
 #' @param file_dir Character string. Path to the local Arrow dataset directory.
 #'
@@ -61,11 +64,12 @@ compare_local_db <- function(file_dir) {
   return(FALSE)
 }
 
-#' Get Last Available Update from API
+#' Get the latest year-month reported by the Comex Stat API
 #'
-#' Queries the Comex Stat API to retrieve the most recent available update date.
+#' Queries the Comex Stat update endpoint and returns the latest available
+#' year-month as a zero-padded string.
 #'
-#' @return A character string in the format `"yyyy-mm"` representing the most recent update.
+#' @return A character string in the format `"yyyy-mm"`.
 #'
 #' @keywords internal
 #' @noRd
@@ -81,9 +85,9 @@ get_last_update <- function() {
   paste0(last_update$year, "-", stringr::str_pad(last_update$monthNumber, 2, "left", "0"))
 }
 
-#' Get Most Recent Date from Local Dataset
+#' Get the most recent year-month from a local dataset
 #'
-#' Extracts the most recent year and month available in a local Arrow dataset.
+#' Reads a local Arrow dataset and returns the maximum available year-month.
 #'
 #' @param file_dir Character string. Path to the local Arrow dataset directory.
 #'
@@ -103,14 +107,16 @@ most_recent_date <- function(file_dir) {
     dplyr::pull(result)
 }
 
-#' Download Comex Stat year files with retry
+#' Download a Comex Stat file with retry
 #'
-#' Downloads a file with up to 3 retry attempts if errors occur.
+#' Downloads a raw Comex Stat CSV to disk, retrying up to three times with a
+#' short pause between failed attempts.
 #'
 #' @param link_download Character string. URL for the CSV file.
 #' @param dir_file_download Character string. Local path to save the downloaded file.
 #'
-#' @return No return value. File is written to disk or an error is thrown after 3 failed attempts.
+#' @return No return value. Writes the file to `dir_file_download` or throws an
+#'   error after three failed attempts.
 #'
 #' @keywords internal
 #' @noRd
@@ -139,13 +145,15 @@ download_cs_file <- function(link_download, dir_file_download) {
   }
 }
 
-#' Read and Process Import Data from CSV
+#' Read and process raw import data
 #'
-#' Reads a CSV file for import data and performs transformations.
+#' Reads a raw Comex Stat import CSV, standardizes column names, aggregates
+#' values by year-month-product-state-country, and computes `cif_value`.
 #'
 #' @param path Character string. File path to the downloaded import csv file.
 #'
-#' @return A `tibble` with cleaned and grouped import data.
+#' @return A `tibble` with one row per `year`, `month`, `ncm`, `state`, and
+#'   `country_code`.
 #'
 #' @keywords internal
 #' @noRd
@@ -173,13 +181,15 @@ read_imports <- function(path) {
     dplyr::arrange(month)
 }
 
-#' Read and Process Export Data from CSV
+#' Read and process raw export data
 #'
-#' Reads a CSV file for export data and performs transformations.
+#' Reads a raw Comex Stat export CSV, standardizes column names, and aggregates
+#' values by year-month-product-state-country.
 #'
 #' @param path Character string. File path to the export CSV file.
 #'
-#' @return A `tibble` with cleaned and grouped export data.
+#' @return A `tibble` with one row per `year`, `month`, `ncm`, `state`, and
+#'   `country_code`.
 #'
 #' @keywords internal
 #' @noRd
@@ -202,15 +212,16 @@ read_exports <- function(path) {
     dplyr::arrange(month)
 }
 
-#' Write Cleaned Data to Arrow Dataset
+#' Write processed Comex Stat data to an Arrow dataset
 #'
-#' Writes a dataset to disk in Arrow format, partitioned by year.
+#' Casts a processed data frame to the supplied Arrow schema and writes it to
+#' disk partitioned by `year`.
 #'
 #' @param x tibble. A `tibble` to be written.
 #' @param path character string. Output directory for the dataset.
 #' @param data_schema An `arrow::schema` to enforce during writing.
 #'
-#' @return No return value. Writes files to the specified path.
+#' @return No return value. Writes dataset files to `path`.
 #'
 #' @keywords internal
 #' @noRd
@@ -219,13 +230,16 @@ write_cs_db <- function(x, path, data_schema) {
   arrow::write_dataset(df, path, partitioning = "year")
 }
 
-#' Build Database from Comex Stat CSV Link
+#' Build one import or export dataset from a Comex Stat download link
 #'
-#' Downloads, reads, processes and writes Comex Stat data (import or export) to the appropriate Arrow dataset.
+#' Downloads a raw Comex Stat CSV, infers whether it is an import or export
+#' file from the URL, processes it, and writes the result to the matching Arrow
+#' dataset directory.
 #'
-#' @param link_download character string. URL to the Comex Stat CSV file.
-#' @param db_dirs Named character vector with paths to `"import"` and `"export"` Arrow databases.
-#' @param schemas Named list of Arrow schemas for `"import"` (imp) and `"export"` (exp) datasets.
+#' @param link_download Character string. URL to the Comex Stat CSV file.
+#' @param db_dirs Character vector containing the local dataset directories.
+#' @param schemas Named list of Arrow schemas for the `"imp"` and `"exp"`
+#'   datasets.
 #'
 #' @return No return value. Data is written to disk.
 #'

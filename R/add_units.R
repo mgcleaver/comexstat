@@ -1,22 +1,23 @@
-#' Add statiscal unit descriptions to Comex Stat data
+#' Add statistical unit descriptions to Comex Stat data
 #'
-#' This helper function matches NCM codes with their corresponding  statistical
-#' unit codes and then appends the unit description in the specified language.
-#' The function complements the understanding of the qty (quantity) variable
-#' of the database created with `create_cs_db`.
+#' Uses the NCM correlation table to recover the `unit_code` associated with
+#' each `ncm` in `x`, then joins the bundled `unit_table` to append the
+#' corresponding unit description.
 #'
-#' The function uses external `ncm_table` and internal `unit_table`
-#' data stored in the package.
+#' @param x A data frame containing an `ncm` column.
+#' @param lang Language of the appended unit description. Must be `"en"` or
+#'   `"pt"`.
+#' @param drop_code Logical. If `TRUE` (default), removes `unit_code` from the
+#'   result after the join.
 #'
-#' @param x A tibble containing a column named `ncm`.
-#' @param lang A string indicating the desired language for the unit description.
-#'   Must be `"en"` (English) or `"pt"` (Portuguese).
-#'   Defaults to `"en"`.
-#' @param drop_code Logical. If `TRUE` (default), the `unit_code` column is
-#' not included in the final table.
+#' @return A data frame with the same rows as `x`, plus `unit_description` or
+#'   `unit_description_pt`. When `drop_code = FALSE`, `unit_code` is also kept.
 #'
-#' @return A tibble or data frame with the unit_description. In case drop_key =
-#' `FALSE`, then the unit_code will also be present.
+#' @examples
+#' \dontrun{
+#' df <- data.frame(ncm = c("01012100", "02011000"))
+#' add_units(df, lang = "pt")
+#' }
 #'
 #' @export
 add_units <- function(

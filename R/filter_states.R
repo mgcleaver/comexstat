@@ -1,18 +1,15 @@
-#' Wrapper to Filter Brazilian States
+#' Keep only rows for Brazilian states
 #'
-#' A wrapper around [dplyr::filter()] to retain only rows with
-#'  Brazilian state abbreviations. The column state also has non-state data.
-#'  So this wrapper filter only state data.
+#' Filters `x` to rows whose `state` value is one of the abbreviations stored in
+#' the internal `brazilian_states` object.
 #'
-#' @param x A data frame that must include a column named `state`.
+#' @param x A data frame containing a `state` column.
 #'
-#' @return A filtered data frame containing only rows with valid Brazilian
-#'  states in the `state` column.
+#' @return A filtered data frame containing only rows with valid Brazilian state
+#'   abbreviations in `state`.
 #'
 #' @details
-#' The `state` column must exist in the input data frame. If missing,
-#' the function throws an error. The internal list of valid states is defined
-#' in the object `brazilian_states`, assumed to be loaded with the package.
+#' The function stops if `x` does not contain a `state` column.
 #'
 #' @examples
 #' df <- data.frame(state = c("SP", "RJ", "ND"), value = 1:3)

@@ -26,18 +26,19 @@ available_correlation_tables <- c(
 #' @noRd
 default_correlation_cache_max_age_days <- 31L
 
-#' Find URL of a correlation table on the Comex Stat website
+#' Find correlation-table links on the Comex Stat website
 #'
-#' Searches the correlation tables page and returns the download link of a CSV file
-#' that matches a given name.
+#' Searches the official Comex Stat downloads page and returns the `href` values
+#' of CSV links that match a requested correlation-table code.
 #'
-#' @param name Character. The name of the table (without the `.csv` extension) to find.
-#' Some options are "PAIS" for countries and "UF" for states.
+#' @param name Character. Correlation-table code without the `.csv` extension,
+#'   such as `"PAIS"` or `"UF"`.
 #'
-#' @return A character vector with the download URL(s) matching the table name.
+#' @return A character vector with matching `href` values. Entries can be
+#'   relative or absolute URLs depending on the source page.
 #'
-#' @details The function parses the HTML content of the COMEX correlation tables page
-#' and searches for `<a>` tags whose `href` attributes match the provided table name.
+#' @details The function normalizes `name` with
+#'   [normalize_correlation_table_name()] before searching the page.
 #'
 #' @examples
 #' \dontrun{
@@ -102,18 +103,20 @@ resolve_correlation_table_url <- function(href) {
 
 #' Download a Comex Stat correlation table
 #'
-#' Downloads a correlation table from a given URL and saves it to a temporary file.
+#' Downloads a correlation table from a URL and saves it to a temporary CSV
+#' file.
 #'
 #' @param url Character. The full URL of the `.csv` file to download.
 #'
-#' @return A character string: the path to the downloaded file.
+#' @return A character string with the path to the downloaded file.
 #'
-#' @details Uses `httr::GET()` with a progress bar and temporary file destination.
-#' The file is saved in a temporary directory using `withr::local_tempdir()`.
+#' @details Uses `httr::GET()` with a progress bar and a `tempfile()`
+#'   destination.
 #'
 #' @examples
 #' \dontrun{
-#'   url <- find_table_link("PAIS")
+#'   href <- find_table_link("PAIS")
+#'   url <- resolve_correlation_table_url(href[[1]])
 #'   path <- download_correlation_table(url)
 #' }
 #'
@@ -139,24 +142,14 @@ download_correlation_table <- function(url) {
   dest_file
 }
 
-#' Read a correlation table from a CSV file
+#' Score likely mojibake in a correlation table
 #'
-#' Reads a correlation table from a CSV file using `read.csv2` and returns
-#' a clean names `tibble`.
+#' Heuristic used to compare candidate encodings when reading a correlation
+#' table. Lower scores indicate fewer suspicious character sequences.
 #'
-#' @param path Character. Full path to the `.csv` file to read.
+#' @param df A data frame containing character columns to inspect.
 #'
-#' @return A `tibble` containing the cleaned correlation table.
-#'
-#' @details Tries multiple file encodings and selects the one with better
-#' text quality. Column names are cleaned using `janitor::clean_names()`.
-#'
-#' @examples
-#' \dontrun{
-#'   url <- find_table_link("PAIS")
-#'   path <- download_correlation_table(url)
-#'   df <- read_correlation_table(path)
-#' }
+#' @return A numeric score where lower values are better.
 #'
 #' @keywords internal
 #' @noRd
@@ -207,10 +200,13 @@ normalize_character_columns_utf8 <- function(df) {
 
 #' Read a correlation table trying different encodings
 #'
-#' @param path Character. Full path to file.
+#' Attempts to read a CSV file with multiple encodings, normalizes character
+#' columns to UTF-8, and selects the candidate with the best text-quality score.
+#'
+#' @param path Character. Full path to the file.
 #' @param encodings Character vector with candidate encodings.
 #'
-#' @return A list with selected `data` and `encoding`.
+#' @return A list with `data`, `encoding`, and the internal quality `score`.
 #' @keywords internal
 #' @noRd
 read_correlation_table_with_best_encoding <- function(
@@ -260,9 +256,14 @@ read_correlation_table_with_best_encoding <- function(
 
 #' Read a correlation table from a CSV file
 #'
+#' Reads a correlation table using the best encoding detected by
+#' [read_correlation_table_with_best_encoding()], cleans column names, and
+#' returns a tibble.
+#'
 #' @param path Character. Full path to the `.csv` file to read.
 #'
-#' @return A `tibble` containing the cleaned correlation table.
+#' @return A `tibble` containing the cleaned correlation table. The selected
+#'   encoding is stored in the `source_encoding` attribute.
 #' @keywords internal
 #' @noRd
 read_correlation_table <- function(path) {
@@ -273,16 +274,15 @@ read_correlation_table <- function(path) {
     structure(source_encoding = selected$encoding)
 }
 
-#' Rename selected columns if present in a data frame
+#' Rename correlation-table columns when known aliases are present
 #'
-#' This internal helper function checks whether specific column names are present in the input tibble
-#' and renames them to standardized English equivalents if found. It is meant to
-#' be used after calling read_correlation_table.
+#' Checks whether source-specific column names are present in `df` and renames
+#' them to the package's standardized English names.
 #'
-#' @param df A `data.frame` or `tibble`. The input data containing original column names.
+#' @param df A `data.frame` or `tibble`.
 #'
-#' @return A `data.frame` or `tibble` with selected columns renamed, if present. Columns not listed in the
-#' renaming map remain unchanged.
+#' @return A `data.frame` or `tibble` with known columns renamed. Columns not in
+#'   the internal renaming map remain unchanged.
 #'
 #' @keywords internal
 #' @noRd
@@ -358,9 +358,11 @@ rename_columns_if_present <- function(df) {
   return(df)
 }
 
-#' Correlation table cache directory
+#' Correlation-table cache directory
 #'
-#' @return Character string. Path for correlation table cache files.
+#' Creates the package cache directory for correlation tables when needed.
+#'
+#' @return Character string. Path where cached correlation tables are stored.
 #' @keywords internal
 #' @noRd
 correlation_cache_dir <- function() {
@@ -372,7 +374,7 @@ correlation_cache_dir <- function() {
   dir
 }
 
-#' Correlation table cache data path
+#' Correlation-table cache data path
 #'
 #' @param table_code Character. Correlation table code.
 #'
@@ -383,7 +385,7 @@ correlation_cache_data_path <- function(table_code) {
   file.path(correlation_cache_dir(), paste0(table_code, ".rds"))
 }
 
-#' Correlation table cache metadata path
+#' Correlation-table cache metadata path
 #'
 #' @param table_code Character. Correlation table code.
 #'
@@ -394,11 +396,12 @@ correlation_cache_meta_path <- function(table_code) {
   file.path(correlation_cache_dir(), paste0(table_code, "_meta.rds"))
 }
 
-#' Read cached correlation table if available
+#' Read a cached correlation table if available
 #'
 #' @param table_code Character. Correlation table code.
 #'
-#' @return NULL or list(data = tibble, meta = list).
+#' @return `NULL` when cache files are missing, otherwise a list with `data`
+#'   and `meta` elements loaded from disk.
 #' @keywords internal
 #' @noRd
 read_correlation_table_cache <- function(table_code) {
@@ -415,7 +418,7 @@ read_correlation_table_cache <- function(table_code) {
   )
 }
 
-#' Write a correlation table to local cache
+#' Write a correlation table to the local cache
 #'
 #' @param table_code Character. Correlation table code.
 #' @param table_data Tibble/data.frame with table content.
@@ -450,12 +453,12 @@ write_correlation_table_cache <- function(
   invisible(NULL)
 }
 
-#' Check if cached table is stale
+#' Check whether a cached table is stale
 #'
 #' @param cache_meta List. Metadata from cache.
 #' @param max_age_days Numeric. Maximum cache age in days.
 #'
-#' @return Logical.
+#' @return Logical. `TRUE` when the cache age exceeds `max_age_days`.
 #' @keywords internal
 #' @noRd
 is_correlation_cache_stale <- function(cache_meta, max_age_days) {
@@ -470,11 +473,11 @@ is_correlation_cache_stale <- function(cache_meta, max_age_days) {
   age_days > max_age_days
 }
 
-#' Format cache timestamp for user messages
+#' Format cache timestamps for user messages
 #'
-#' @param datetime POSIXct value.
+#' @param datetime POSIXct value or an object coercible to POSIXct.
 #'
-#' @return Character.
+#' @return Character string formatted in UTC.
 #' @keywords internal
 #' @noRd
 format_cache_datetime <- function(datetime) {
@@ -488,7 +491,7 @@ format_cache_datetime <- function(datetime) {
 #'
 #' @param table_code Character. Correlation table code.
 #'
-#' @return Named list with `data` and `source_url`.
+#' @return Named list with `data`, `source_url`, and `source_encoding`.
 #' @keywords internal
 #' @noRd
 download_correlation_table_data <- function(table_code) {
@@ -524,12 +527,13 @@ download_correlation_table_data <- function(table_code) {
   )
 }
 
-#' Apply table-specific post processing without dropping columns
+#' Apply table-specific post-processing without dropping columns
 #'
 #' @param df Tibble/data.frame.
 #' @param table_code Character. Correlation table code.
 #'
-#' @return Tibble with standardized columns and table specific transforms.
+#' @return Tibble with standardized columns and table-specific transforms. For
+#'   the `"NCM"` table, `ncm` is left-padded to eight digits.
 #' @keywords internal
 #' @noRd
 post_process_correlation_table <- function(df, table_code) {
@@ -543,7 +547,7 @@ post_process_correlation_table <- function(df, table_code) {
   tibble::as_tibble(df)
 }
 
-#' Get correlation table with cache, refresh and fallback behavior
+#' Get a correlation table with cache, refresh, and fallback behavior
 #'
 #' @param name Character. Correlation table code.
 #' @param refresh Logical. Force refresh from remote source.
@@ -551,6 +555,12 @@ post_process_correlation_table <- function(df, table_code) {
 #' @param verbose Logical. Inform cache/download decisions in messages.
 #'
 #' @return Tibble with the requested correlation table.
+#'
+#' @details
+#' If a non-stale cache exists and `refresh = FALSE`, the cached table is
+#' returned immediately. Otherwise the function tries to download a fresh copy,
+#' updates the cache on success, and falls back to the cached version if the
+#' download fails.
 #' @keywords internal
 #' @noRd
 get_correlation_table_cached <- function(
@@ -666,24 +676,25 @@ get_correlation_table_cached <- function(
   )
 }
 
-#' Backward-compatible table processor
+#' Legacy wrapper for correlation-table retrieval
 #'
 #' @param name Character. Correlation table code.
 #'
-#' @return Tibble with requested correlation table.
+#' @return Tibble with the requested correlation table.
 #' @keywords internal
 #' @noRd
 process_table <- function(name) {
   get_correlation_table_cached(name = name, refresh = FALSE)
 }
 
-#' Get country correlation table
+#' Get the country correlation table
 #'
 #' @param refresh Logical. Force refresh from remote source.
 #' @param max_age_days Numeric. Max cache age in days before refresh attempt.
 #' @param verbose Logical. Inform cache/download decisions in messages.
 #'
-#' @return Tibble.
+#' @return Tibble with country codes and names.
+#' @keywords internal
 #' @noRd
 get_country_table <- function(
     refresh = FALSE,
@@ -698,13 +709,14 @@ get_country_table <- function(
   )
 }
 
-#' Get NCM correlation table
+#' Get the NCM correlation table
 #'
 #' @param refresh Logical. Force refresh from remote source.
 #' @param max_age_days Numeric. Max cache age in days before refresh attempt.
 #' @param verbose Logical. Inform cache/download decisions in messages.
 #'
-#' @return Tibble.
+#' @return Tibble with NCM codes and related metadata.
+#' @keywords internal
 #' @noRd
 get_ncm_table <- function(
     refresh = FALSE,
@@ -719,13 +731,14 @@ get_ncm_table <- function(
   )
 }
 
-#' Get ISIC correlation table
+#' Get the ISIC correlation table
 #'
 #' @param refresh Logical. Force refresh from remote source.
 #' @param max_age_days Numeric. Max cache age in days before refresh attempt.
 #' @param verbose Logical. Inform cache/download decisions in messages.
 #'
-#' @return Tibble.
+#' @return Tibble with ISIC codes and descriptions.
+#' @keywords internal
 #' @noRd
 get_isic_table <- function(
     refresh = FALSE,
@@ -740,13 +753,14 @@ get_isic_table <- function(
   )
 }
 
-#' Get BEC correlation table
+#' Get the BEC correlation table
 #'
 #' @param refresh Logical. Force refresh from remote source.
 #' @param max_age_days Numeric. Max cache age in days before refresh attempt.
 #' @param verbose Logical. Inform cache/download decisions in messages.
 #'
-#' @return Tibble.
+#' @return Tibble with BEC codes and descriptions.
+#' @keywords internal
 #' @noRd
 get_bec_table <- function(
     refresh = FALSE,
@@ -761,13 +775,14 @@ get_bec_table <- function(
   )
 }
 
-#' Get CUCI correlation table
+#' Get the CUCI correlation table
 #'
 #' @param refresh Logical. Force refresh from remote source.
 #' @param max_age_days Numeric. Max cache age in days before refresh attempt.
 #' @param verbose Logical. Inform cache/download decisions in messages.
 #'
-#' @return Tibble.
+#' @return Tibble with CUCI codes and descriptions.
+#' @keywords internal
 #' @noRd
 get_cuci_table <- function(
     refresh = FALSE,
@@ -782,13 +797,19 @@ get_cuci_table <- function(
   )
 }
 
-#' Get state table
+#' Get the state reference table
 #'
-#' @param refresh Logical. Force refresh from remote source when fallback is needed.
+#' Returns the bundled `state_table` when it is available in the package
+#' namespace; otherwise falls back to the cached/downloaded `"UF"` correlation
+#' table.
+#'
+#' @param refresh Logical. Force refresh from remote source when the fallback
+#'   path is used.
 #' @param max_age_days Numeric. Max cache age in days before refresh attempt.
 #' @param verbose Logical. Inform cache/download decisions in messages.
 #'
-#' @return Tibble.
+#' @return Tibble with state codes, abbreviations, names, and regions.
+#' @keywords internal
 #' @noRd
 get_state_table <- function(
     refresh = FALSE,
@@ -807,9 +828,10 @@ get_state_table <- function(
   )
 }
 
-#' Get unit table bundled in package internals
+#' Get the bundled unit reference table
 #'
-#' @return Tibble.
+#' @return Tibble with unit codes and unit descriptions.
+#' @keywords internal
 #' @noRd
 get_unit_table <- function() {
   unit_table
