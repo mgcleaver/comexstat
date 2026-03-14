@@ -170,14 +170,14 @@ correlation_table_encoding_score <- function(df) {
   sample_text <- enc2utf8(sample_text)
 
   bad_count <- 0L
-  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("Ã"))
-  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("Â"))
-  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("�"))
-  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("â€"))
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("\u00C3"))
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("\u00C2"))
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("\uFFFD"))
+  bad_count <- bad_count + stringr::str_count(sample_text, stringr::fixed("\u00E2\u20AC"))
 
   good_count <- stringr::str_count(
     sample_text,
-    "[áéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ]"
+    "[\u00E1\u00E9\u00ED\u00F3\u00FA\u00E2\u00EA\u00F4\u00E3\u00F5\u00E7\u00C1\u00C9\u00CD\u00D3\u00DA\u00C2\u00CA\u00D4\u00C3\u00D5\u00C7]"
   )
 
   (bad_count * 10L) - good_count
