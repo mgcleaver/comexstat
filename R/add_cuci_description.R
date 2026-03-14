@@ -76,7 +76,7 @@ add_cuci_description <- function(
 
   if (level != "basic_heading" & level != "all") {
     temp <- temp |>
-      select(
+      dplyr::select(
         -dplyr::matches("basic_heading")
       )
   }
