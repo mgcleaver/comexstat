@@ -38,7 +38,7 @@ default_correlation_cache_max_age_days <- 31L
 #'   relative or absolute URLs depending on the source page.
 #'
 #' @details The function normalizes `name` with
-#'   [normalize_correlation_table_name()] before searching the page.
+#'   `normalize_correlation_table_name()` before searching the page.
 #'
 #' @examples
 #' \dontrun{
@@ -257,7 +257,7 @@ read_correlation_table_with_best_encoding <- function(
 #' Read a correlation table from a CSV file
 #'
 #' Reads a correlation table using the best encoding detected by
-#' [read_correlation_table_with_best_encoding()], cleans column names, and
+#' `read_correlation_table_with_best_encoding()`, cleans column names, and
 #' returns a tibble.
 #'
 #' @param path Character. Full path to the `.csv` file to read.
