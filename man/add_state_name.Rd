@@ -2,10 +2,26 @@
 % Please edit documentation in R/add_state_name.R
 \name{add_state_name}
 \alias{add_state_name}
-\title{Add state name based on Comex Stat's state code}
+\title{Add state names from Comex Stat state abbreviations}
 \usage{
-add_state_name(x, drop_key = TRUE)
+add_state_name(x, drop_code = TRUE)
+}
+\arguments{
+\item{x}{A data frame containing a \code{state} column with Brazilian state
+abbreviations.}
+
+\item{drop_code}{Logical. If \code{TRUE} (default), removes \code{state} from the
+result after the join.}
+}
+\value{
+A data frame with the same rows as \code{x}, plus \code{state_name}.
 }
 \description{
-Add state name based on Comex Stat's state code
+Joins the package state reference table to \code{x} using the \code{state} column and
+appends \code{state_name}.
+}
+\examples{
+df <- data.frame(state = c("SP", "RJ"))
+add_state_name(df)
+
 }

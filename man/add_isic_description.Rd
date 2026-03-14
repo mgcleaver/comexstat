@@ -2,15 +2,48 @@
 % Please edit documentation in R/add_isic_description.R
 \name{add_isic_description}
 \alias{add_isic_description}
-\title{Add ISIC level descriptions based on Comex Stat's ISIC table}
+\title{Add ISIC descriptions from Comex Stat}
 \usage{
 add_isic_description(
   x,
   lang = c("en", "pt", "es"),
   level = c("class", "group", "division", "section", "all"),
-  drop_key = TRUE
+  drop_code = TRUE
 )
 }
+\arguments{
+\item{x}{A data frame containing an \code{ncm} column.}
+
+\item{lang}{Language of the appended ISIC descriptions. Must be one of
+\code{"en"}, \code{"pt"}, or \code{"es"}.}
+
+\item{level}{ISIC aggregation level to return. Must be one of \code{"class"},
+\code{"group"}, \code{"division"}, \code{"section"}, or \code{"all"}.}
+
+\item{drop_code}{Logical. If \code{TRUE} (default), removes joined ISIC code
+columns from the result.}
+}
+\value{
+A data frame with the same rows as \code{x}, plus the selected ISIC
+description columns for the requested language. When \code{drop_code = FALSE},
+the corresponding ISIC code columns are also retained.
+}
 \description{
-Add ISIC level descriptions based on Comex Stat's ISIC table
+Uses the NCM and ISIC correlation tables to map each \code{ncm} in \code{x} to its
+ISIC classification and append description columns for the requested
+aggregation level.
+}
+\details{
+The function first joins \code{x} to the NCM table to recover \code{isic_class_code}
+and then joins the ISIC table to retrieve the requested descriptions. When
+\code{level = "all"}, descriptions for all available ISIC levels are returned.
+When \code{level} is not \code{"class"} or \code{"all"}, intermediate \code{class} columns are
+removed from the final output.
+}
+\examples{
+\dontrun{
+df <- data.frame(ncm = c("01012100", "02011000"))
+add_isic_description(df, lang = "en", level = "division")
+}
+
 }

@@ -2,30 +2,36 @@
 % Please edit documentation in R/create_cs_db.R
 \name{create_cs_db}
 \alias{create_cs_db}
-\title{Create Local Comex Stat Database from Official Raw Files}
+\title{Create a local Comex Stat database from official raw files}
 \usage{
 create_cs_db(dest_dir, start_year, timeout = 2000)
 }
 \arguments{
-\item{dest_dir}{Character string. Path to the directory where the database should be stored.}
+\item{dest_dir}{Character string. Directory where the local database will be
+created.}
 
-\item{start_year}{Integer. First year to include in the database (e.g., \code{2015}).}
+\item{start_year}{Integer. First year to include in the download window. The
+official series starts in 1997.}
 
-\item{timeout}{Integer. Timeout limit in seconds for HTTP requests. Default is \code{2000}.}
+\item{timeout}{Integer. Timeout in seconds applied through
+\code{options(timeout = ...)} before downloads. Defaults to \code{2000}.}
 }
 \value{
-No return value. Side effect: creates and populates local folders (\verb{export/} and \verb{import/}) with Arrow datasets.
+No return value. Side effect: creates and populates \verb{export/} and
+\verb{import/} subdirectories with Arrow datasets.
 }
 \description{
-Downloads and processes public Comex Stat data from the Brazilian government
-website, creating a local database organized in Apache Arrow format, partitioned by year.
+Downloads yearly Comex Stat raw CSV files from the official website,
+transforms them, and writes local Apache Arrow datasets partitioned by year
+in \code{dest_dir/export} and \code{dest_dir/import}.
 }
 \details{
-The function accesses the official Comex Stat page and downloads monthly
-import and export data (CSV format), processes the files, and writes them as
-partitioned Arrow datasets. Only data from \code{start_year} to the current year is included.
+The function scrapes the Comex Stat download page, keeps links for yearly
+import and export files from \code{start_year} through the current year, and
+writes the processed data to disk using Arrow schemas defined internally.
 
-The structure is ready for efficient analysis using \code{arrow::open_dataset()}.
+The resulting folder structure can be read efficiently with
+\code{arrow::open_dataset()}.
 }
 \examples{
 \dontrun{

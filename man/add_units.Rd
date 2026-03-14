@@ -2,31 +2,32 @@
 % Please edit documentation in R/add_units.R
 \name{add_units}
 \alias{add_units}
-\title{Add statiscal unit descriptions to Comex Stat data}
+\title{Add statistical unit descriptions to Comex Stat data}
 \usage{
-add_units(x, lang = c("en", "pt"), drop_key = TRUE)
+add_units(x, lang = c("en", "pt"), drop_code = TRUE)
 }
 \arguments{
-\item{x}{A tibble containing a column named \code{ncm}.}
+\item{x}{A data frame containing an \code{ncm} column.}
 
-\item{lang}{A string indicating the desired language for the unit description.
-Must be \code{"en"} (English) or \code{"pt"} (Portuguese).
-Defaults to \code{"en"}.}
+\item{lang}{Language of the appended unit description. Must be \code{"en"} or
+\code{"pt"}.}
 
-\item{drop_key}{Logical. If \code{TRUE} (default), the \code{unit_code} column is
-not included in the final table.}
+\item{drop_code}{Logical. If \code{TRUE} (default), removes \code{unit_code} from the
+result after the join.}
 }
 \value{
-A tibble or data frame with the unit_description. In case drop_key =
-\code{FALSE}, then the unit_code will also be present.
+A data frame with the same rows as \code{x}, plus \code{unit_description} or
+\code{unit_description_pt}. When \code{drop_code = FALSE}, \code{unit_code} is also kept.
 }
 \description{
-This helper function matches NCM codes with their corresponding  statistical
-unit codes and then appends the unit description in the specified language.
-The function complements the understanding of the qty (quantity) variable
-of the database created with \code{create_cs_db}.
+Uses the NCM correlation table to recover the \code{unit_code} associated with
+each \code{ncm} in \code{x}, then joins the bundled \code{unit_table} to append the
+corresponding unit description.
 }
-\details{
-The function uses external \code{ncm_table} and internal \code{unit_table}
-data stored in the package.
+\examples{
+\dontrun{
+df <- data.frame(ncm = c("01012100", "02011000"))
+add_units(df, lang = "pt")
+}
+
 }
