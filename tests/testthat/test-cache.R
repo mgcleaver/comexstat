@@ -20,6 +20,87 @@ test_that("correlation table cache can be written and read back", {
   expect_equal(cached$meta$source_encoding, "Latin1")
 })
 
+test_that("clear_cache removes only dynamic correlation table cache files", {
+  cache_root <- tempfile("cache-root-")
+  dir.create(cache_root)
+  withr::local_envvar(c(R_USER_CACHE_DIR = cache_root))
+
+  dynamic_codes <- c("PAIS", "NCM", "NCM_ISIC", "NCM_CGCE", "NCM_CUCI")
+  preserved_codes <- c("UF", "NCM_UNIDADE")
+
+  all_codes <- c(dynamic_codes, preserved_codes)
+
+  purrr::walk(
+    all_codes,
+    \(table_code) {
+      comexstat:::write_correlation_table_cache(
+        table_code = table_code,
+        table_data = fixture_country_table(),
+        source_url = paste0("https://example.com/", table_code, ".csv"),
+        source_encoding = "UTF-8"
+      )
+    }
+  )
+
+  removed_paths <- comexstat::clear_cache()
+
+  dynamic_paths <- tibble::tibble(table_code = dynamic_codes) |>
+    dplyr::mutate(
+      data_path = purrr::map_chr(table_code, comexstat:::correlation_cache_data_path),
+      meta_path = purrr::map_chr(table_code, comexstat:::correlation_cache_meta_path)
+    ) |>
+    tidyr::pivot_longer(
+      cols = c(data_path, meta_path),
+      names_to = "cache_type",
+      values_to = "path"
+    ) |>
+    dplyr::pull(path)
+
+  preserved_paths <- tibble::tibble(table_code = preserved_codes) |>
+    dplyr::mutate(
+      data_path = purrr::map_chr(table_code, comexstat:::correlation_cache_data_path),
+      meta_path = purrr::map_chr(table_code, comexstat:::correlation_cache_meta_path)
+    ) |>
+    tidyr::pivot_longer(
+      cols = c(data_path, meta_path),
+      names_to = "cache_type",
+      values_to = "path"
+    ) |>
+    dplyr::pull(path)
+
+  expect_setequal(removed_paths, dynamic_paths)
+  expect_false(any(file.exists(dynamic_paths)))
+  expect_true(all(file.exists(preserved_paths)))
+})
+
+test_that("refresh_cache updates only dynamic correlation tables", {
+  calls <- new.env(parent = emptyenv())
+  calls$table_codes <- character(0)
+  calls$refresh <- logical(0)
+
+  refreshed <- testthat::with_mocked_bindings(
+    get_correlation_table_cached = function(name, refresh = FALSE, ...) {
+      calls$table_codes <- c(calls$table_codes, name)
+      calls$refresh <- c(calls$refresh, refresh)
+
+      tibble::tibble(table_code = name)
+    },
+    code = comexstat::refresh_cache(),
+    .package = "comexstat"
+  )
+
+  expect_identical(
+    calls$table_codes,
+    c("PAIS", "NCM", "NCM_ISIC", "NCM_CGCE", "NCM_CUCI")
+  )
+  expect_true(all(calls$refresh))
+  expect_named(
+    refreshed,
+    c("PAIS", "NCM", "NCM_ISIC", "NCM_CGCE", "NCM_CUCI")
+  )
+  expect_false(any(calls$table_codes %in% c("UF", "NCM_UNIDADE")))
+})
+
 test_that("get_correlation_table_cached uses a fresh cache without downloading", {
   cached <- list(
     data = fixture_country_table(),
