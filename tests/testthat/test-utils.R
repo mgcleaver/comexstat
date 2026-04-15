@@ -23,13 +23,53 @@ test_that("rename_columns_if_present renames known aliases and preserves others"
   input <- tibble::tibble(
     co_pais = 10L,
     no_pais_ing = "Brazil",
+    bec_n3_desc = "Primary food",
+    isic_division_desc = "Crop production",
+    cuci_group_desc_pt = "Animais vivos",
     untouched = "ok"
   )
 
   result <- comexstat:::rename_columns_if_present(input)
 
-  expect_named(result, c("country_code", "country_name", "untouched"))
+  expect_named(
+    result,
+    c(
+      "country_code",
+      "country_name",
+      "bec_n3_name",
+      "isic_division_name",
+      "cuci_group_name_pt",
+      "untouched"
+    )
+  )
   expect_equal(result$country_name, "Brazil")
+  expect_equal(result$bec_n3_name, "Primary food")
+  expect_equal(result$isic_division_name, "Crop production")
+  expect_equal(result$cuci_group_name_pt, "Animais vivos")
+})
+
+test_that("read_correlation_table_cache normalizes cached desc aliases", {
+  data_path <- tempfile(fileext = ".rds")
+  meta_path <- tempfile(fileext = ".rds")
+
+  saveRDS(
+    tibble::tibble(
+      bec_n3_code = "111",
+      bec_n3_desc = "Primary food"
+    ),
+    data_path
+  )
+  saveRDS(list(downloaded_at = Sys.time()), meta_path)
+
+  result <- testthat::with_mocked_bindings(
+    correlation_cache_data_path = function(...) data_path,
+    correlation_cache_meta_path = function(...) meta_path,
+    code = comexstat:::read_correlation_table_cache("NCM_CGCE"),
+    .package = "comexstat"
+  )
+
+  expect_named(result$data, c("bec_n3_code", "bec_n3_name"))
+  expect_equal(result$data$bec_n3_name, "Primary food")
 })
 
 test_that("post_process_correlation_table pads NCM codes to 8 digits", {
