@@ -49,6 +49,12 @@ add_units <- function(
 
   temp <- dplyr::relocate(
     temp,
+    unit_code,
+    .after = ncm
+  )
+
+  temp <- dplyr::relocate(
+    temp,
     dplyr::all_of(name_col),
     .after = unit_code
   )
