@@ -27,6 +27,12 @@ add_state_name <- function(
     by = "state"
   )
 
+  temp <- dplyr::relocate(
+    temp,
+    state_name,
+    .after = state
+  )
+
   if (drop_code) {
     temp <- dplyr::select(temp, -state)
   }

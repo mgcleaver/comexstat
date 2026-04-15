@@ -51,6 +51,13 @@ add_bec_description <- function(
     pt = "desc_pt$",
     es = "desc_es$"
   )
+  desc_cols <- switch(
+    lang,
+    en = c("bec_n3_desc", "bec_n2_desc", "bec_n1_desc"),
+    pt = c("bec_n3_desc_pt", "bec_n2_desc_pt", "bec_n1_desc_pt"),
+    es = c("bec_n3_desc_es", "bec_n2_desc_es", "bec_n1_desc_es")
+  )
+  code_cols <- c("bec_n3_code", "bec_n2_code", "bec_n1_code")
 
   if (level == "all") {
     level_col_desc <- "(n3|n2|n1)"
@@ -93,6 +100,16 @@ add_bec_description <- function(
   if (level != "n3" & level != "all") {
     temp <- temp |>
       dplyr::select(-dplyr::matches("n3"))
+  }
+
+  for (i in seq_along(code_cols)) {
+    if (all(c(code_cols[[i]], desc_cols[[i]]) %in% names(temp))) {
+      temp <- dplyr::relocate(
+        temp,
+        dplyr::all_of(desc_cols[[i]]),
+        .after = dplyr::all_of(code_cols[[i]])
+      )
+    }
   }
 
   if (drop_code) {

@@ -42,6 +42,12 @@ add_country_name <- function(
     by = "country_code"
   )
 
+  temp <- dplyr::relocate(
+    temp,
+    dplyr::all_of(name_col),
+    .after = country_code
+  )
+
   if (drop_code) {
     temp <- dplyr::select(temp, -country_code)
   }

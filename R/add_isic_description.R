@@ -45,6 +45,33 @@ add_isic_description <- function(
     pt = "desc_pt$",
     es = "desc_es$"
   )
+  desc_cols <- switch(
+    lang,
+    en = c(
+      "isic_class_desc",
+      "isic_group_desc",
+      "isic_division_desc",
+      "isic_section_desc"
+    ),
+    pt = c(
+      "isic_class_desc_pt",
+      "isic_group_desc_pt",
+      "isic_division_desc_pt",
+      "isic_section_desc_pt"
+    ),
+    es = c(
+      "isic_class_desc_es",
+      "isic_group_desc_es",
+      "isic_division_desc_es",
+      "isic_section_desc_es"
+    )
+  )
+  code_cols <- c(
+    "isic_class_code",
+    "isic_group_code",
+    "isic_division_code",
+    "isic_section_code"
+  )
 
   if (level == "all") {
     level_col_desc <- "(class|group|division|section)"
@@ -87,6 +114,16 @@ add_isic_description <- function(
   if (level != "class" & level != "all") {
     temp <- temp |>
       dplyr::select(-dplyr::matches("class"))
+  }
+
+  for (i in seq_along(code_cols)) {
+    if (all(c(code_cols[[i]], desc_cols[[i]]) %in% names(temp))) {
+      temp <- dplyr::relocate(
+        temp,
+        dplyr::all_of(desc_cols[[i]]),
+        .after = dplyr::all_of(code_cols[[i]])
+      )
+    }
   }
 
   if (drop_code) {

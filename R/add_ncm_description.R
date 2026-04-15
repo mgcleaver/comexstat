@@ -41,6 +41,12 @@ add_ncm_description <- function(
     by = "ncm"
   )
 
+  temp <- dplyr::relocate(
+    temp,
+    dplyr::all_of(name_col),
+    .after = ncm
+  )
+
   if (drop_code) {
     temp <- dplyr::select(temp, -ncm)
   }

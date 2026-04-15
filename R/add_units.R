@@ -47,6 +47,12 @@ add_units <- function(
     by = "unit_code"
   )
 
+  temp <- dplyr::relocate(
+    temp,
+    dplyr::all_of(name_col),
+    .after = unit_code
+  )
+
   if (drop_code) {
     temp <- dplyr::select(temp, -unit_code)
   }

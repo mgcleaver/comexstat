@@ -44,6 +44,20 @@ add_cuci_description <- function(
     drop_code = TRUE
       ) {
   level <- match.arg(level)
+  code_cols <- c(
+    "cuci_basic_heading_code",
+    "cuci_subgroup_code",
+    "cuci_group_code",
+    "cuci_division_code",
+    "cuci_section_code"
+  )
+  desc_cols <- c(
+    "cuci_basic_heading_desc_pt",
+    "cuci_subgroup_desc_pt",
+    "cuci_group_desc_pt",
+    "cuci_division_desc_pt",
+    "cuci_section_desc_pt"
+  )
 
   level_col <- dplyr::if_else(
     level == "all",
@@ -79,6 +93,16 @@ add_cuci_description <- function(
       dplyr::select(
         -dplyr::matches("basic_heading")
       )
+  }
+
+  for (i in seq_along(code_cols)) {
+    if (all(c(code_cols[[i]], desc_cols[[i]]) %in% names(temp))) {
+      temp <- dplyr::relocate(
+        temp,
+        dplyr::all_of(desc_cols[[i]]),
+        .after = dplyr::all_of(code_cols[[i]])
+      )
+    }
   }
 
   if (drop_code) {
