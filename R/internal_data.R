@@ -1,13 +1,13 @@
-#' Comex Stat's unit code and description table
+#' Comex Stat's unit code and name table
 #'
-#' A table containing unit codes and descriptions
+#' A table containing unit codes and names
 #'
 #' @format A tibble with 15 rows and 4 columns:
 #' \describe{
 #'   \item{unit_code}{NCM unit code.}
-#'   \item{unit_description_pt}{Unit description in Portuguese.}
+#'   \item{unit_name_pt}{Unit name in Portuguese.}
 #'   \item{sg_unid}{Unit abbreviation in Portuguese.}
-#'   \item{unit_description}{Unit description in English.}
+#'   \item{unit_name}{Unit name in English.}
 #' }
 #'
 #' @source \url{https://balanca.economia.gov.br/balanca/bd/tabelas/NCM_UNIDADE.csv}

@@ -4,5 +4,5 @@ utils::globalVariables(
     "state", "state_name", "country_code", "vl_frete", "vl_seguro", "cif_value",
     "atualizacao", "state_table", "isic_table", "isic_class_code",
     "country_table", "brazilian_states", "ncm_table", "unit_code", "unit_table",
-    "cuci_basic_heading_code", "cuci_basic_heading_desc_pt", "bec_n3_code"
+    "cuci_basic_heading_code", "cuci_basic_heading_name_pt", "bec_n3_code"
     ))

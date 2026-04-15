@@ -2,27 +2,27 @@
 % Please edit documentation in R/add_units.R
 \name{add_units}
 \alias{add_units}
-\title{Add statistical unit descriptions to Comex Stat data}
+\title{Add statistical unit names to Comex Stat data}
 \usage{
 add_units(x, lang = c("en", "pt"), drop_code = TRUE)
 }
 \arguments{
 \item{x}{A data frame containing an \code{ncm} column.}
 
-\item{lang}{Language of the appended unit description. Must be \code{"en"} or
+\item{lang}{Language of the appended unit name. Must be \code{"en"} or
 \code{"pt"}.}
 
 \item{drop_code}{Logical. If \code{TRUE} (default), removes \code{unit_code} from the
 result after the join.}
 }
 \value{
-A data frame with the same rows as \code{x}, plus \code{unit_description} or
-\code{unit_description_pt}. When \code{drop_code = FALSE}, \code{unit_code} is also kept.
+A data frame with the same rows as \code{x}, plus \code{unit_name} or
+\code{unit_name_pt}. When \code{drop_code = FALSE}, \code{unit_code} is also kept.
 }
 \description{
 Uses the NCM correlation table to recover the \code{unit_code} associated with
 each \code{ncm} in \code{x}, then joins the bundled \code{unit_table} to append the
-corresponding unit description.
+corresponding unit name.
 }
 \examples{
 \dontrun{

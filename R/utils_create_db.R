@@ -141,7 +141,7 @@ download_cs_file <- function(link_download, dir_file_download) {
     })
   }
   if (!download_success) {
-    stop(glue::glue("Failed to download {category} {year_from_link} after 3 attempts.\n"))
+    stop(glue::glue("Failed to download file for year {year_from_link} after 3 attempts.\n"))
   }
 }
 

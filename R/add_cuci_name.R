@@ -1,8 +1,8 @@
-#' Add CUCI descriptions from Comex Stat
+#' Add CUCI names from Comex Stat
 #'
 #' Uses the NCM and CUCI correlation tables to map each `ncm` in `x` to its
-#' CUCI classification and append Portuguese description columns for the
-#' requested aggregation level.
+#' CUCI classification and append Portuguese name columns for the requested
+#' aggregation level.
 #'
 #' @param x A data frame containing an `ncm` column.
 #' @param level CUCI aggregation level to return. Must be one of
@@ -11,17 +11,16 @@
 #' @param drop_code Logical. If `TRUE` (default), removes joined CUCI code
 #'   columns from the result.
 #'
-#' @return A data frame with the same rows as `x`, plus the selected CUCI
-#'   description columns. When `drop_code = FALSE`, the corresponding CUCI code
-#'   columns are also retained.
+#' @return A data frame with the same rows as `x`, plus the selected CUCI name
+#'   columns. When `drop_code = FALSE`, the corresponding CUCI code columns are
+#'   also retained.
 #'
 #' @details
-#' Only Portuguese CUCI descriptions are available in the source table. The
-#' function first joins `x` to the NCM table to recover
-#' `cuci_basic_heading_code`, then joins the CUCI table. When `level = "all"`,
-#' all CUCI description levels are returned. When `level` is not
-#' `"basic_heading"` or `"all"`, intermediate `basic_heading` columns are
-#' removed from the final output.
+#' Only Portuguese CUCI names are available in the source table. The function
+#' first joins `x` to the NCM table to recover `cuci_basic_heading_code`, then
+#' joins the CUCI table. When `level = "all"`, all CUCI name levels are
+#' returned. When `level` is not `"basic_heading"` or `"all"`, intermediate
+#' `basic_heading` columns are removed from the final output.
 #'
 #' @examples
 #' \dontrun{
@@ -30,15 +29,15 @@
 #' # Example input tibble with NCM codes
 #' df <- tibble(ncm = c("01012100", "02011000"))
 #'
-#' # Add CUCI descriptions at the group level
-#' df_with_cuci <- add_cuci_description(df, level = "group")
+#' # Add CUCI names at the group level
+#' df_with_cuci <- add_cuci_name(df, level = "group")
 #'
-#' # Add CUCI descriptions at all levels
-#' df_all <- add_cuci_description(df, level = "all")
+#' # Add CUCI names at all levels
+#' df_all <- add_cuci_name(df, level = "all")
 #' }
 #'
 #' @export
-add_cuci_description <- function(
+add_cuci_name <- function(
     x,
     level = c("basic_heading", "subgroup", "group", "division", "section", "all"),
     drop_code = TRUE
@@ -51,12 +50,12 @@ add_cuci_description <- function(
     "cuci_division_code",
     "cuci_section_code"
   )
-  desc_cols <- c(
-    "cuci_basic_heading_desc_pt",
-    "cuci_subgroup_desc_pt",
-    "cuci_group_desc_pt",
-    "cuci_division_desc_pt",
-    "cuci_section_desc_pt"
+  name_cols <- c(
+    "cuci_basic_heading_name_pt",
+    "cuci_subgroup_name_pt",
+    "cuci_group_name_pt",
+    "cuci_division_name_pt",
+    "cuci_section_name_pt"
   )
 
   level_col <- dplyr::if_else(
@@ -83,7 +82,7 @@ add_cuci_description <- function(
       dplyr::select(
         cuci_table,
         cuci_basic_heading_code,
-        cuci_basic_heading_desc_pt,
+        cuci_basic_heading_name_pt,
         dplyr::matches(regex_col_select, perl = TRUE)),
       by = "cuci_basic_heading_code"
     )
@@ -96,10 +95,10 @@ add_cuci_description <- function(
   }
 
   for (i in seq_along(code_cols)) {
-    if (all(c(code_cols[[i]], desc_cols[[i]]) %in% names(temp))) {
+    if (all(c(code_cols[[i]], name_cols[[i]]) %in% names(temp))) {
       temp <- dplyr::relocate(
         temp,
-        dplyr::all_of(desc_cols[[i]]),
+        dplyr::all_of(name_cols[[i]]),
         .after = dplyr::all_of(code_cols[[i]])
       )
     }
