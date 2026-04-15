@@ -20,6 +20,31 @@ test_that("correlation table cache can be written and read back", {
   expect_equal(cached$meta$source_encoding, "Latin1")
 })
 
+test_that("read_correlation_table_cache invalidates legacy dynamic cache files", {
+  cache_root <- tempfile("cache-root-")
+  dir.create(cache_root)
+  withr::local_envvar(c(R_USER_CACHE_DIR = cache_root))
+
+  table_code <- "NCM_CGCE"
+  data_path <- comexstat:::correlation_cache_data_path(table_code)
+  meta_path <- comexstat:::correlation_cache_meta_path(table_code)
+
+  saveRDS(
+    tibble::tibble(
+      bec_n3_code = "111",
+      bec_n3_desc = "Primary food"
+    ),
+    data_path
+  )
+  saveRDS(list(downloaded_at = Sys.time(), source_encoding = "UTF-8"), meta_path)
+
+  cached <- comexstat:::read_correlation_table_cache(table_code)
+
+  expect_null(cached)
+  expect_false(file.exists(data_path))
+  expect_false(file.exists(meta_path))
+})
+
 test_that("clear_cache removes only dynamic correlation table cache files", {
   cache_root <- tempfile("cache-root-")
   dir.create(cache_root)
@@ -148,6 +173,45 @@ test_that("get_correlation_table_cached downloads and writes cache when needed",
   expect_equal(written$value$table_data, download_result$data)
 })
 
+test_that("get_correlation_table_cached redownloads after invalidating legacy cache", {
+  cache_root <- tempfile("cache-root-")
+  dir.create(cache_root)
+  withr::local_envvar(c(R_USER_CACHE_DIR = cache_root))
+
+  table_code <- "NCM_CGCE"
+  data_path <- comexstat:::correlation_cache_data_path(table_code)
+  meta_path <- comexstat:::correlation_cache_meta_path(table_code)
+  download_result <- list(
+    data = fixture_bec_table(),
+    source_url = "https://example.com/NCM_CGCE.csv",
+    source_encoding = "Latin1"
+  )
+
+  saveRDS(
+    tibble::tibble(
+      bec_n3_code = "111",
+      bec_n3_desc = "Primary food"
+    ),
+    data_path
+  )
+  saveRDS(list(downloaded_at = Sys.time(), source_encoding = "UTF-8"), meta_path)
+
+  result <- testthat::with_mocked_bindings(
+    download_correlation_table_data = function(table_code) download_result,
+    code = comexstat:::get_correlation_table_cached(table_code, verbose = FALSE),
+    .package = "comexstat"
+  )
+
+  cached <- comexstat:::read_correlation_table_cache(table_code)
+
+  expect_equal(result, download_result$data)
+  expect_equal(cached$data, download_result$data)
+  expect_equal(cached$meta$source_url, download_result$source_url)
+  expect_equal(cached$meta$source_encoding, download_result$source_encoding)
+  expect_true(file.exists(data_path))
+  expect_true(file.exists(meta_path))
+})
+
 test_that("get_correlation_table_cached falls back to cache when refresh fails", {
   cached <- list(
     data = fixture_country_table(),
@@ -185,4 +249,37 @@ test_that("get_correlation_table_cached errors when download fails and no cache 
     ),
     "Failed to download 'PAIS' and no cache is available"
   )
+})
+
+test_that("get_correlation_table_cached errors when only legacy cache exists", {
+  cache_root <- tempfile("cache-root-")
+  dir.create(cache_root)
+  withr::local_envvar(c(R_USER_CACHE_DIR = cache_root))
+
+  table_code <- "NCM_CGCE"
+  data_path <- comexstat:::correlation_cache_data_path(table_code)
+  meta_path <- comexstat:::correlation_cache_meta_path(table_code)
+
+  saveRDS(
+    tibble::tibble(
+      bec_n3_code = "111",
+      bec_n3_desc = "Primary food"
+    ),
+    data_path
+  )
+  saveRDS(list(downloaded_at = Sys.time(), source_encoding = "UTF-8"), meta_path)
+
+  expect_error(
+    testthat::with_mocked_bindings(
+      download_correlation_table_data = function(table_code) {
+        stop("download failed")
+      },
+      code = comexstat:::get_correlation_table_cached(table_code, verbose = FALSE),
+      .package = "comexstat"
+    ),
+    "Failed to download 'NCM_CGCE' and no cache is available"
+  )
+
+  expect_false(file.exists(data_path))
+  expect_false(file.exists(meta_path))
 })

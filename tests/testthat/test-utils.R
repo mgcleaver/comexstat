@@ -23,9 +23,9 @@ test_that("rename_columns_if_present renames known aliases and preserves others"
   input <- tibble::tibble(
     co_pais = 10L,
     no_pais_ing = "Brazil",
-    bec_n3_desc = "Primary food",
-    isic_division_desc = "Crop production",
-    cuci_group_desc_pt = "Animais vivos",
+    no_cgce_n3_ing = "Primary food",
+    no_isic_divisao_ing = "Crop production",
+    no_cuci_grupo = "Animais vivos",
     untouched = "ok"
   )
 
@@ -48,28 +48,37 @@ test_that("rename_columns_if_present renames known aliases and preserves others"
   expect_equal(result$cuci_group_name_pt, "Animais vivos")
 })
 
-test_that("read_correlation_table_cache normalizes cached desc aliases", {
-  data_path <- tempfile(fileext = ".rds")
-  meta_path <- tempfile(fileext = ".rds")
-
-  saveRDS(
-    tibble::tibble(
-      bec_n3_code = "111",
-      bec_n3_desc = "Primary food"
-    ),
-    data_path
+test_that("is_legacy_correlation_table_cache detects pre-name schemas by table", {
+  expect_true(
+    comexstat:::is_legacy_correlation_table_cache(
+      tibble::tibble(ncm_description = "Live horses"),
+      "NCM"
+    )
   )
-  saveRDS(list(downloaded_at = Sys.time()), meta_path)
-
-  result <- testthat::with_mocked_bindings(
-    correlation_cache_data_path = function(...) data_path,
-    correlation_cache_meta_path = function(...) meta_path,
-    code = comexstat:::read_correlation_table_cache("NCM_CGCE"),
-    .package = "comexstat"
+  expect_true(
+    comexstat:::is_legacy_correlation_table_cache(
+      tibble::tibble(isic_section_desc_es = "Agricultura"),
+      "NCM_ISIC"
+    )
   )
-
-  expect_named(result$data, c("bec_n3_code", "bec_n3_name"))
-  expect_equal(result$data$bec_n3_name, "Primary food")
+  expect_true(
+    comexstat:::is_legacy_correlation_table_cache(
+      tibble::tibble(bec_n1_desc_pt = "Consumo"),
+      "NCM_CGCE"
+    )
+  )
+  expect_true(
+    comexstat:::is_legacy_correlation_table_cache(
+      tibble::tibble(cuci_division_desc_pt = "Alimentos"),
+      "NCM_CUCI"
+    )
+  )
+  expect_false(
+    comexstat:::is_legacy_correlation_table_cache(
+      tibble::tibble(country_name = "Brazil"),
+      "PAIS"
+    )
+  )
 })
 
 test_that("post_process_correlation_table pads NCM codes to 8 digits", {

@@ -26,6 +26,49 @@ available_correlation_tables <- c(
 #' @noRd
 default_correlation_cache_max_age_days <- 31L
 
+#' Legacy cache columns from the pre-`*_name` schema
+#' @keywords internal
+#' @noRd
+legacy_correlation_cache_columns <- list(
+  NCM = c(
+    "ncm_description",
+    "ncm_description_pt",
+    "ncm_description_es"
+  ),
+  NCM_ISIC = c(
+    "isic_class_desc",
+    "isic_class_desc_pt",
+    "isic_class_desc_es",
+    "isic_group_desc",
+    "isic_group_desc_pt",
+    "isic_group_desc_es",
+    "isic_division_desc",
+    "isic_division_desc_pt",
+    "isic_division_desc_es",
+    "isic_section_desc",
+    "isic_section_desc_pt",
+    "isic_section_desc_es"
+  ),
+  NCM_CGCE = c(
+    "bec_n3_desc",
+    "bec_n3_desc_pt",
+    "bec_n3_desc_es",
+    "bec_n2_desc",
+    "bec_n2_desc_pt",
+    "bec_n2_desc_es",
+    "bec_n1_desc",
+    "bec_n1_desc_pt",
+    "bec_n1_desc_es"
+  ),
+  NCM_CUCI = c(
+    "cuci_basic_heading_desc_pt",
+    "cuci_subgroup_desc_pt",
+    "cuci_group_desc_pt",
+    "cuci_division_desc_pt",
+    "cuci_section_desc_pt"
+  )
+)
+
 #' Find correlation-table links on the Comex Stat website
 #'
 #' Searches the official Comex Stat downloads page and returns the `href` values
@@ -383,6 +426,45 @@ rename_columns_if_present <- function(df) {
   return(df)
 }
 
+#' Check whether cached correlation data uses the legacy `*_desc` schema
+#'
+#' @param df A cached `data.frame`/`tibble`.
+#' @param table_code Character. Correlation table code.
+#'
+#' @return Logical. `TRUE` when legacy columns are present for `table_code`.
+#' @keywords internal
+#' @noRd
+is_legacy_correlation_table_cache <- function(df, table_code) {
+  legacy_columns <- legacy_correlation_cache_columns[[table_code]]
+
+  if (is.null(legacy_columns)) {
+    return(FALSE)
+  }
+
+  any(legacy_columns %in% names(df))
+}
+
+#' Delete cached files for a correlation table
+#'
+#' @param table_code Character. Correlation table code.
+#'
+#' @return Invisible character vector with removed file paths.
+#' @keywords internal
+#' @noRd
+invalidate_correlation_table_cache <- function(table_code) {
+  cache_paths <- c(
+    correlation_cache_data_path(table_code),
+    correlation_cache_meta_path(table_code)
+  )
+  cache_paths <- cache_paths[file.exists(cache_paths)]
+
+  if (length(cache_paths) > 0) {
+    file.remove(cache_paths)
+  }
+
+  invisible(cache_paths)
+}
+
 #' Correlation-table cache directory
 #'
 #' Creates the package cache directory for correlation tables when needed.
@@ -437,8 +519,17 @@ read_correlation_table_cache <- function(table_code) {
     return(NULL)
   }
 
+  cached_data <- readRDS(data_path)
+
+  if (is_legacy_correlation_table_cache(cached_data, table_code)) {
+    invalidate_correlation_table_cache(table_code)
+    return(NULL)
+  }
+
   list(
-    data = readRDS(data_path),
+    data = cached_data |>
+      rename_columns_if_present() |>
+      tibble::as_tibble(),
     meta = readRDS(meta_path)
   )
 }
