@@ -216,24 +216,41 @@ read_correlation_table_with_best_encoding <- function(
   attempts <- list()
 
   for (enc in encodings) {
-    read_attempt <- tryCatch(
-      {
-        raw_df <- utils::read.csv2(
-          path,
-          fileEncoding = enc,
-          stringsAsFactors = FALSE
-        )
+    warnings <- character(0)
 
-        normalized_df <- normalize_character_columns_utf8(raw_df)
-        score <- correlation_table_encoding_score(normalized_df)
+    read_attempt <- withCallingHandlers(
+      tryCatch(
+        {
+          raw_df <- utils::read.csv2(
+            path,
+            fileEncoding = enc,
+            stringsAsFactors = FALSE
+          )
 
-        list(
-          encoding = enc,
-          score = score,
-          data = normalized_df
-        )
-      },
-      error = function(e) NULL
+          normalized_df <- normalize_character_columns_utf8(raw_df)
+          score <- correlation_table_encoding_score(normalized_df)
+
+          if (nrow(normalized_df) == 0 || ncol(normalized_df) == 0) {
+            score <- score + 1e6
+          }
+
+          if (length(warnings) > 0) {
+            score <- score + (length(unique(warnings)) * 1e5)
+          }
+
+          list(
+            encoding = enc,
+            score = score,
+            data = normalized_df,
+            warnings = unique(warnings)
+          )
+        },
+        error = function(e) NULL
+      ),
+      warning = function(w) {
+        warnings <<- c(warnings, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
     )
 
     if (!is.null(read_attempt)) {
@@ -247,6 +264,14 @@ read_correlation_table_with_best_encoding <- function(
       paste(encodings, collapse = ", "),
       "."
     )
+  }
+
+  non_empty_attempts <- attempts[
+    vapply(attempts, function(x) nrow(x$data) > 0 && ncol(x$data) > 0, logical(1))
+  ]
+
+  if (length(non_empty_attempts) > 0) {
+    attempts <- non_empty_attempts
   }
 
   scores <- vapply(attempts, function(x) x$score, numeric(1))
