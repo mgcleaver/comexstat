@@ -190,18 +190,9 @@ update_cs_db <- function(
   if (is.null(start_year)) {
     exp_min_year <- min(available_exp_years) |>
       unique()
-    imp_min_year <- min(available_exp_years) |>
+    imp_min_year <- min(available_imp_years) |>
       unique()
-
-    if (exp_min_year == imp_min_year) {
-      start_year <- exp_min_year
-    }
-
-    if(exp_min_year > imp_min_year) {
-      start_year <- imp_min_year
-    } else {
-      start_year <- exp_min_year
-    }
+    start_year <- min(c(exp_min_year, imp_min_year))
   }
 
   # filter out years to download
