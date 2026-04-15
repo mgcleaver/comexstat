@@ -28,17 +28,24 @@ dynamic_correlation_tables <- c(
 #'
 #' @export
 clear_cache <- function() {
-  cache_files <- tibble::tibble(table_code = dynamic_correlation_tables) |>
-    dplyr::mutate(
-      data_path = purrr::map_chr(table_code, correlation_cache_data_path),
-      meta_path = purrr::map_chr(table_code, correlation_cache_meta_path)
-    ) |>
+  cache_files <- tibble::tibble(
+    table_code = dynamic_correlation_tables,
+    data_path = purrr::map_chr(
+      dynamic_correlation_tables,
+      correlation_cache_data_path
+    ),
+    meta_path = purrr::map_chr(
+      dynamic_correlation_tables,
+      correlation_cache_meta_path
+    )
+  ) |>
     tidyr::pivot_longer(
-      cols = c(data_path, meta_path),
+      cols = c("data_path", "meta_path"),
       names_to = "cache_type",
       values_to = "path"
-    ) |>
-    dplyr::filter(file.exists(path))
+    )
+
+  cache_files <- cache_files[file.exists(cache_files$path), , drop = FALSE]
 
   if (nrow(cache_files) > 0) {
     file.remove(cache_files$path)
@@ -65,15 +72,12 @@ clear_cache <- function() {
 #'
 #' @export
 refresh_cache <- function() {
-  refreshed_tables <- tibble::tibble(table_code = dynamic_correlation_tables) |>
-    dplyr::mutate(
-      data = purrr::map(
-        table_code,
-        get_correlation_table_cached,
-        refresh = TRUE
-      )
-    ) |>
-    tibble::deframe()
+  refreshed_tables <- purrr::map(
+    dynamic_correlation_tables,
+    get_correlation_table_cached,
+    refresh = TRUE
+  )
+  names(refreshed_tables) <- dynamic_correlation_tables
 
   invisible(refreshed_tables)
 }

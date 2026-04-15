@@ -25,8 +25,9 @@ columns from the result.}
 }
 \value{
 A data frame with the same rows as \code{x}, plus the selected ISIC name
-columns for the requested language. When \code{drop_code = FALSE}, the
-corresponding ISIC code columns are also retained.
+columns for the requested language relocated immediately after \code{ncm}. When
+\code{drop_code = FALSE}, the corresponding ISIC code columns are also retained
+in the same block.
 }
 \description{
 Uses the NCM and ISIC correlation tables to map each \code{ncm} in \code{x} to its
@@ -38,7 +39,8 @@ The function first joins \code{x} to the NCM table to recover \code{isic_class_c
 and then joins the ISIC table to retrieve the requested names. When
 \code{level = "all"}, names for all available ISIC levels are returned. When
 \code{level} is not \code{"class"} or \code{"all"}, intermediate \code{class} columns are
-removed from the final output.
+removed from the final output. The joined ISIC columns are always placed
+immediately after \code{ncm}.
 }
 \examples{
 \dontrun{

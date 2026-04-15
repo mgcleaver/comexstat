@@ -22,8 +22,8 @@ columns from the result.}
 }
 \value{
 A data frame with the same rows as \code{x}, plus the selected CUCI name
-columns. When \code{drop_code = FALSE}, the corresponding CUCI code columns are
-also retained.
+columns relocated immediately after \code{ncm}. When \code{drop_code = FALSE}, the
+corresponding CUCI code columns are also retained in the same block.
 }
 \description{
 Uses the NCM and CUCI correlation tables to map each \code{ncm} in \code{x} to its
@@ -35,7 +35,8 @@ Only Portuguese CUCI names are available in the source table. The function
 first joins \code{x} to the NCM table to recover \code{cuci_basic_heading_code}, then
 joins the CUCI table. When \code{level = "all"}, all CUCI name levels are
 returned. When \code{level} is not \code{"basic_heading"} or \code{"all"}, intermediate
-\code{basic_heading} columns are removed from the final output.
+\code{basic_heading} columns are removed from the final output. The joined CUCI
+columns are always placed immediately after \code{ncm}.
 }
 \examples{
 \dontrun{

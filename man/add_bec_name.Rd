@@ -25,8 +25,9 @@ columns from the result.}
 }
 \value{
 A data frame with the same rows as \code{x}, plus the selected BEC name
-columns for the requested language. When \code{drop_code = FALSE}, the
-corresponding BEC code columns are also retained.
+columns for the requested language relocated immediately after \code{ncm}. When
+\code{drop_code = FALSE}, the corresponding BEC code columns are also retained
+in the same block.
 }
 \description{
 Uses the NCM and BEC correlation tables to map each \code{ncm} in \code{x} to its
@@ -38,7 +39,8 @@ The function first joins \code{x} to the NCM table to recover \code{bec_n3_code}
 then joins the BEC table to retrieve the requested names. When
 \code{level = "all"}, names for all available BEC levels are returned. When
 \code{level} is \code{"n2"} or \code{"n1"}, intermediate \code{n3} columns are removed from the
-final output.
+final output. The joined BEC columns are always placed immediately after
+\code{ncm}.
 }
 \examples{
 \dontrun{
