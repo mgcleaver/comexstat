@@ -13,15 +13,17 @@
 #'   columns from the result.
 #'
 #' @return A data frame with the same rows as `x`, plus the selected BEC name
-#'   columns for the requested language. When `drop_code = FALSE`, the
-#'   corresponding BEC code columns are also retained.
+#'   columns for the requested language relocated immediately after `ncm`. When
+#'   `drop_code = FALSE`, the corresponding BEC code columns are also retained
+#'   in the same block.
 #'
 #' @details
 #' The function first joins `x` to the NCM table to recover `bec_n3_code` and
 #' then joins the BEC table to retrieve the requested names. When
 #' `level = "all"`, names for all available BEC levels are returned. When
 #' `level` is `"n2"` or `"n1"`, intermediate `n3` columns are removed from the
-#' final output.
+#' final output. The joined BEC columns are always placed immediately after
+#' `ncm`.
 #'
 #' @examples
 #' \dontrun{
@@ -120,6 +122,15 @@ add_bec_name <- function(
       paste0(collapse = "|")
     temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
+
+  added_cols <- names(temp)
+  added_cols <- added_cols[!added_cols %in% names(x)]
+
+  temp <- dplyr::relocate(
+    temp,
+    dplyr::all_of(added_cols),
+    .after = ncm
+  )
 
   temp
 }

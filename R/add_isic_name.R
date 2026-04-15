@@ -13,15 +13,17 @@
 #'   columns from the result.
 #'
 #' @return A data frame with the same rows as `x`, plus the selected ISIC name
-#'   columns for the requested language. When `drop_code = FALSE`, the
-#'   corresponding ISIC code columns are also retained.
+#'   columns for the requested language relocated immediately after `ncm`. When
+#'   `drop_code = FALSE`, the corresponding ISIC code columns are also retained
+#'   in the same block.
 #'
 #' @details
 #' The function first joins `x` to the NCM table to recover `isic_class_code`
 #' and then joins the ISIC table to retrieve the requested names. When
 #' `level = "all"`, names for all available ISIC levels are returned. When
 #' `level` is not `"class"` or `"all"`, intermediate `class` columns are
-#' removed from the final output.
+#' removed from the final output. The joined ISIC columns are always placed
+#' immediately after `ncm`.
 #'
 #' @examples
 #' \dontrun{
@@ -134,6 +136,15 @@ add_isic_name <- function(
       paste0(collapse = "|")
     temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
+
+  added_cols <- names(temp)
+  added_cols <- added_cols[!added_cols %in% names(x)]
+
+  temp <- dplyr::relocate(
+    temp,
+    dplyr::all_of(added_cols),
+    .after = ncm
+  )
 
   return(temp)
 }

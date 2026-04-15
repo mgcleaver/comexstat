@@ -12,15 +12,16 @@
 #'   columns from the result.
 #'
 #' @return A data frame with the same rows as `x`, plus the selected CUCI name
-#'   columns. When `drop_code = FALSE`, the corresponding CUCI code columns are
-#'   also retained.
+#'   columns relocated immediately after `ncm`. When `drop_code = FALSE`, the
+#'   corresponding CUCI code columns are also retained in the same block.
 #'
 #' @details
 #' Only Portuguese CUCI names are available in the source table. The function
 #' first joins `x` to the NCM table to recover `cuci_basic_heading_code`, then
 #' joins the CUCI table. When `level = "all"`, all CUCI name levels are
 #' returned. When `level` is not `"basic_heading"` or `"all"`, intermediate
-#' `basic_heading` columns are removed from the final output.
+#' `basic_heading` columns are removed from the final output. The joined CUCI
+#' columns are always placed immediately after `ncm`.
 #'
 #' @examples
 #' \dontrun{
@@ -112,6 +113,15 @@ add_cuci_name <- function(
       paste0(collapse = "|")
     temp <- dplyr::select(temp, -dplyr::matches(remove_codes))
   }
+
+  added_cols <- names(temp)
+  added_cols <- added_cols[!added_cols %in% names(x)]
+
+  temp <- dplyr::relocate(
+    temp,
+    dplyr::all_of(added_cols),
+    .after = ncm
+  )
 
   return(temp)
 }
